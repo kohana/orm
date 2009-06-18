@@ -8,7 +8,7 @@
  * [ref-orm]: http://wikipedia.org/wiki/Object-relational_mapping
  * [ref-act]: http://wikipedia.org/wiki/Active_record
  *
- * $Id$
+ * $Id: ORM.php 4425 2009-06-18 22:14:07Z jheathco $
  *
  * @package    ORM
  * @author     Kohana Team
@@ -45,6 +45,10 @@ class ORM_Core {
 	protected $table_name;
 	protected $table_columns;
 	protected $ignored_columns;
+
+	// Auto-update columns for creation and updates
+	protected $updated_column = NULL;
+	protected $created_column = NULL;
 
 	// Table primary key and value
 	protected $primary_key = 'id';
@@ -730,6 +734,15 @@ class ORM_Core {
 			{
 				// Primary key isn't empty and hasn't been changed so do an update
 
+				if (is_array($this->updated_column))
+				{
+					// Fill the updated column
+					$column = $this->updated_column['column'];
+					$format = $this->updated_column['format'];
+
+					$data[$column] = $this->object[$column] = ($format === TRUE) ? time() : date($format);
+				}
+
 				$query = db::update($this->table_name)
 					->set($data)
 					->where($this->primary_key, '=', $this->primary_key_value)
@@ -740,6 +753,15 @@ class ORM_Core {
 			}
 			else
 			{
+				if (is_array($this->created_column))
+				{
+					// Fill the created column
+					$column = $this->created_column['column'];
+					$format = $this->created_column['format'];
+
+					$data[$column] = $this->object[$column] = ($format === TRUE) ? time() : date($format);
+				}
+
 				$result = db::insert($this->table_name)
 					->set($data)
 					->execute($this->db);
