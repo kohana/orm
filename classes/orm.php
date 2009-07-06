@@ -38,6 +38,7 @@ class ORM {
 	// Related objects
 	protected $object_relations = array();
 	protected $changed_relations = array();
+	protected $foreign_key_suffix = '_id';
 
 	// Model table information
 	protected $object_name;
@@ -51,8 +52,8 @@ class ORM {
 	protected $created_column = NULL;
 
 	// Table primary key and value
-	protected $primary_key = 'id';
-	protected $primary_val = 'name';
+	protected $primary_key  = 'id';
+	protected $primary_val  = 'name';
 
 	// Array of foreign key name overloads
 	protected $foreign_key = array();
@@ -158,6 +159,7 @@ class ORM {
 			// Make the ignored columns mirrored = mirrored
 			$this->ignored_columns = array_combine($this->ignored_columns, $this->ignored_columns);
 		}
+
 
 		// Load column information
 		$this->reload_columns();
@@ -1232,7 +1234,7 @@ class ORM {
 		}
 		else
 		{
-			if ( ! is_string($table) OR ! in_array($table.'_id', $this->object))
+			if ( ! is_string($table) OR ! in_array($table.$this->$foreign_key_suffix, $this->object))
 			{
 				// Use this table
 				$table = $this->table_name;
@@ -1250,7 +1252,7 @@ class ORM {
 				}
 			}
 
-			$foreign_key = $table.'_id';
+			$foreign_key = $table.$this->$foreign_key_suffix;
 		}
 
 		return $prefix_table.$foreign_key;
