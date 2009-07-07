@@ -778,14 +778,10 @@ class ORM {
 					$data[$column] = $this->object[$column] = ($format === TRUE) ? time() : date($format);
 				}
 
-				$query = DB::update($this->table_name);
-				foreach($data as $column => $value)
-					$query = $query->set($column, $data);
-				$query->where($this->primary_key, '=', $this->primary_key_value)
-					->execute($this->db);
-/*					->set($data)
+				$query = DB::update($this->table_name)
+					->set($data)
 					->where($this->primary_key, '=', $this->primary_key_value)
-					->execute($this->db);*/
+					->execute($this->db);
 
 				// Object has been saved
 				$this->saved = TRUE;
