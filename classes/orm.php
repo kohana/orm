@@ -1234,7 +1234,7 @@ class ORM {
 		}
 		else
 		{
-			if ( ! is_string($table) OR ! in_array($table.$this->$foreign_key_suffix, $this->object))
+			if ( ! is_string($table) OR ! in_array($table.$this->foreign_key_suffix, $this->object))
 			{
 				// Use this table
 				$table = $this->table_name;
@@ -1252,7 +1252,7 @@ class ORM {
 				}
 			}
 
-			$foreign_key = $table.$this->$foreign_key_suffix;
+			$foreign_key = $table.$this->foreign_key_suffix;
 		}
 
 		return $prefix_table.$foreign_key;
