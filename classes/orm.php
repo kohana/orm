@@ -720,16 +720,18 @@ class ORM {
 	 * via the model, after the $_POST Validation object has been created.
 	 *
 	 * @param   object   Validation array
-	 * @param   boolean  Save on validate
+	 * @param   boolean  save on validate
+	 * @param   array    error messages
 	 * @return  boolean
 	 */
-	public function validate(Validation $array, $save = FALSE)
+	public function validate(Validate $array, $save = FALSE, & $errors)
 	{
-		if ( ! $array->submitted())
+
+		if (count($array) == 0)
 			return FALSE;
 
 		// Validate the array
-		if ($status = $array->validate())
+		if ($status = $array->check($errors))
 		{
 			foreach ($array as $key => $value)
 			{
