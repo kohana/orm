@@ -804,12 +804,13 @@ class ORM {
 					->values($data)
 					->execute($this->db);
 
-				if ($result > 0)
+				if ($result)
 				{
 					if (empty($this->object[$this->primary_key]))
 					{
 						// Load the insert id as the primary key
-						$this->object[$this->primary_key] = $result;
+						// $result is array(insert_id, total_rows)
+						$this->object[$this->primary_key] = $result[0];
 					}
 
 					// Object is now loaded and saved
