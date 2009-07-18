@@ -1547,4 +1547,13 @@ class ORM {
 		return (empty($this->object[$this->primary_key]) AND $this->object[$this->primary_key] !== '0');
 	}
 
+	/**
+	 * Returns last executed query
+	 *
+	 * @return string
+	 */
+	public function last_query() {
+			return $this->db->last_query;
+	}
+
 } // End ORM
