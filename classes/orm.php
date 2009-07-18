@@ -320,7 +320,7 @@ class ORM {
 				}
 
 				// Foreign key lies in this table (this model belongs_to target model)
-				$where = array($model->foreign_key(TRUE), '=', $this->object[$this->foreign_key(/*$column*/$model->object_name)]);
+				$where = array($model->foreign_key(TRUE), '=', $this->object[$this->foreign_key($model->object_name)]);
 			}
 			else
 			{
@@ -349,8 +349,7 @@ class ORM {
 			return $this->related[$column] = $model
 				->join($join_table)
 				->on($join_col1, '=', $join_col2)
-				->where($through->foreign_key($this->object_name, $join_table), '=', $this->primary_key_value)
-        ->find_all();
+				->where($through->foreign_key($this->object_name, $join_table), '=', $this->primary_key_value);
 		}
 		elseif (isset($this->has_many[$column]))
 		{
@@ -359,14 +358,14 @@ class ORM {
 
 			$model = ORM::factory(inflector::singular($model_name));
 
-			return $this->related[$column] = $model->where($this->foreign_key($column, $model->table_name), '=', $this->primary_key_value)->find_all();
+			return $this->related[$column] = $model->where($this->foreign_key($column, $model->table_name), '=', $this->primary_key_value);
 		}
 		elseif (($column_alias = array_search($column, $this->has_many)) !== FALSE)
 		{
 			// one<>many relationship
 			$model = ORM::factory(inflector::singular($column));
 
-			return $this->related[$column] = $this->related[$column_alias] = $model->where($this->foreign_key($column_alias, $model->table_name), '=', $this->primary_key_value)->find_all();
+			return $this->related[$column] = $this->related[$column_alias] = $model->where($this->foreign_key($column_alias, $model->table_name), '=', $this->primary_key_value);
 		}
 		elseif (in_array($column, $this->has_and_belongs_to_many))
 		{
@@ -376,12 +375,12 @@ class ORM {
 			if ($this->has($model, TRUE))
 			{
 				// many<>many relationship
-				return $this->related[$column] = $model->where($model->foreign_key(TRUE), 'IN', $this->changed_relations[$column])->find_all();
+				return $this->related[$column] = $model->where($model->foreign_key(TRUE), 'IN', $this->changed_relations[$column]);
 			}
 			else
 			{
 				// empty many<>many relationship
-				return $this->related[$column] = $model->where($model->foreign_key(TRUE), 'IS', NULL)->find_all();
+				return $this->related[$column] = $model->where($model->foreign_key(TRUE), 'IS', NULL);
 			}
 		}
 		elseif (isset($this->ignored_columns[$column]))
