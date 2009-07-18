@@ -964,6 +964,8 @@ class ORM {
 		// Replace the current object with an empty one
 		$this->load_values($values);
 
+		$this->reset();
+
 		return $this;
 	}
 
@@ -1494,6 +1496,8 @@ class ORM {
 		// Load the result
 		$result = $this->db_builder->execute($this->db);
 
+		$this->reset();
+
 		if ($array === TRUE)
 		{
 			// Return an iterated result
@@ -1554,6 +1558,14 @@ class ORM {
 	 */
 	public function last_query() {
 			return $this->db->last_query;
+	}
+
+	/**
+	 * Clears Query Builder settings
+	 */
+	protected function reset() {
+			$this->db_builder->reset();
+			$this->db_applied = array();
 	}
 
 } // End ORM
