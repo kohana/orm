@@ -66,12 +66,33 @@ class ORM {
 	protected $db = 'default';
 	protected $db_applied = array();
 	protected $db_builder;
+	protected $db_pending = array();
+
+	// Callable database methods
+	protected static $db_methods = array
+	(
+		'where', 'and_where', 'or_where', 'where_open', 'and_where_open', 'or_where_open', 'where_close',
+		'and_where_close', 'or_where_close', 'distinct', 'select', 'from', 'join', 'on', 'group_by',
+		'having', 'and_having', 'or_having', 'having_open', 'and_having_open', 'or_having_open',
+		'having_close', 'and_having_close', 'or_having_close', 'order_by', 'limit', 'offset'
+	);
 
 	// With calls already applied
 	protected $with_applied = array();
 
 	// Stores column information for ORM models
 	protected static $column_cache = array();
+
+	// Data to be loaded into the model from a database call cast
+	protected $preload_data = array();
+
+	// Members that have access methods
+	protected static $properties = array
+	(
+		'object_name', 'object_plural', // Object
+		'primary_key', 'primary_val', 'table_name', 'table_columns', // Table
+		'has_one', 'belongs_to', 'has_many', 'has_many_through', 'has_and_belongs_to_many', 'load_with' // Relationships
+	);
 
 	/**
 	 * Creates and returns a new model.
@@ -113,18 +134,20 @@ class ORM {
 		// Clear the object
 		$this->clear();
 
-		if (is_array($id))
-		{
-			// Load an object
-			$this->load_values($id);
-		}
-		elseif (!empty($id))
+		if ($id !== NULL)
 		{
 			// Set the object's primary key, but don't load it until needed
 			$this->object[$this->primary_key] = $id;
 
 			// Object is considered saved until something is set
 			$this->saved = TRUE;
+		}
+		elseif ( ! empty($this->preload_data))
+		{
+			// Load preloaded data from a database call cast
+			$this->load_values($this->preload_data);
+
+			$this->preload_data = array();
 		}
 	}
 
@@ -156,16 +179,12 @@ class ORM {
 
 		if (is_array($this->ignored_columns))
 		{
-			// Make the ignored columns mirrored = mirrored
+			// Make the ignored columns mirrored = mirrored for performance
 			$this->ignored_columns = array_combine($this->ignored_columns, $this->ignored_columns);
 		}
 
-
 		// Load column information
 		$this->reload_columns();
-
-		// Initialize the builder
-		$this->db_builder = new Database_Query_Builder_Select;
 	}
 
 	/**
@@ -208,61 +227,25 @@ class ORM {
 	 */
 	public function __call($method, array $args)
 	{
-		if (method_exists($this->db_builder, $method))
+		if (in_array($method, self::$properties))
 		{
-			if (in_array($method, array('execute', 'insert', 'update', 'delete')))
-				throw new Kohana_Exception('Query methods cannot be used through ORM');
-
-			// Method has been applied to the database
-			$this->db_applied[$method] = $method;
-
-			// Number of arguments passed
-			$num_args = count($args);
-
-			if ($method === 'select' AND $num_args > 3)
+			if ($method === 'loaded')
 			{
-				// Call select() manually to avoid call_user_func_array
-				$this->db_builder->select($args);
-			}
-			else
-			{
-				// We use switch here to manually call the database methods. This is
-				// done for speed: call_user_func_array can take over 300% longer to
-				// make calls. Most database methods are 4 arguments or less, so this
-				// avoids almost any calls to call_user_func_array.
-
-				switch ($num_args)
+				if ( ! $this->loaded AND ! $this->empty_primary_key())
 				{
-					case 0:
-						if (in_array($method, array('open', 'close', 'cache')))
-						{
-							// Should return ORM, not Database
-							$this->db_builder->$method();
-						}
-						else
-						{
-							// Support for things like reset_select, reset_write, list_tables
-							return $this->db_builder->$method();
-						}
-					break;
-					case 1:
-						$this->db_builder->$method($args[0]);
-					break;
-					case 2:
-						$this->db_builder->$method($args[0], $args[1]);
-					break;
-					case 3:
-						$this->db_builder->$method($args[0], $args[1], $args[2]);
-					break;
-					case 4:
-						$this->db_builder->$method($args[0], $args[1], $args[2], $args[3]);
-					break;
-					default:
-						// Here comes the snail...
-						call_user_func_array(array($this->db, $method), $args);
-					break;
+					// No load has been attempted yet so do it now
+					$this->find($this->object[$this->primary_key], TRUE);
 				}
 			}
+
+			// Return the property
+			return $this->$method;
+		}
+
+		if (in_array($method, self::$db_methods))
+		{
+			// Method has been applied to the database
+			$this->db_pending[] = array('name' => $method, 'args' => $args);
 
 			return $this;
 		}
@@ -360,12 +343,12 @@ class ORM {
 
 			return $this->related[$column] = $model->where($this->foreign_key($column, $model->table_name), '=', $this->primary_key_value);
 		}
-		elseif (($column_alias = array_search($column, $this->has_many)) !== FALSE)
+		elseif (($alias = array_search($column, $this->has_many)) !== FALSE)
 		{
 			// one<>many relationship
 			$model = ORM::factory(inflector::singular($column));
 
-			return $this->related[$column] = $this->related[$column_alias] = $model->where($this->foreign_key($column_alias, $model->table_name), '=', $this->primary_key_value);
+			return $this->related[$column] = $this->related[$column_alias] = $model->where($this->foreign_key($alias, $model->table_name), '=', $this->primary_key_value);
 		}
 		elseif (in_array($column, $this->has_and_belongs_to_many))
 		{
@@ -387,23 +370,6 @@ class ORM {
 		{
 			return NULL;
 		}
-		elseif (in_array($column, array
-			(
-				'object_name', 'object_plural', // Object
-				'primary_key', 'primary_val', 'table_name', 'table_columns', // Table
-				'loaded', 'saved', // Status
-				'has_one', 'belongs_to', 'has_many', 'has_many_through', 'has_and_belongs_to_many', 'load_with' // Relationships
-			)))
-		{
-			if ($column === 'loaded' AND ! $this->loaded AND ! $this->empty_primary_key())
-			{
-				// If returning the loaded member and no load has been attempted, do it now
-				$this->find($this->object[$this->primary_key], TRUE);
-			}
-
-			// Model meta information
-			return $this->$column;
-		}
 		else
 		{
 			throw new Kohana_Exception('The :property property does not exist in the :class class',
@@ -420,13 +386,22 @@ class ORM {
 	 */
 	public function __set($column, $value)
 	{
+		if ( ! isset($this->object_name))
+		{
+			// Object not yet constructed, so we're loading data from a database call cast
+			$this->preload_data[$column] = $value;
+
+			return;
+		}
+
 		if (isset($this->ignored_columns[$column]))
 		{
-			return NULL;
+			return;
 		}
 
 		if ( ! $this->loaded AND ! $this->empty_primary_key())
 		{
+			// Load
 			$this->find($this->object[$this->primary_key]);
 		}
 
@@ -639,27 +614,85 @@ class ORM {
 	}
 
 	/**
+	 * Initializes the Database Builder to given query type
+	 *
+	 * @param   int  Type of Database query
+	 * @return  ORM
+	 */
+	protected function build($type)
+	{
+		switch ($type)
+		{
+			case Database::SELECT:
+				$this->db_builder = DB::select();
+			break;
+			case Database::UPDATE:
+				$this->db_builder = DB::update($this->table_name);
+			break;
+			case Database::DELETE:
+				$this->db_builder = DB::delete($this->table_name);
+		}
+
+		// Process pending database method calls
+		foreach ($this->db_pending as $method)
+		{
+			$name = $method['name'];
+			$args = $method['args'];
+
+			$this->db_applied[$name] = $name;
+
+			switch (count($args))
+			{
+				case 0:
+					if (in_array($name, array('open', 'close', 'cache')))
+					{
+						// Should return ORM, not Database
+						$this->db_builder->$method();
+					}
+					else
+					{
+						// Support for things like reset_select, reset_write, list_tables
+						return $this->db_builder->$method();
+					}
+				break;
+				case 1:
+					$this->db_builder->$name($args[0]);
+				break;
+				case 2:
+					$this->db_builder->$name($args[0], $args[1]);
+				break;
+				case 3:
+					$this->db_builder->$name($args[0], $args[1], $args[2]);
+				break;
+				case 4:
+					$this->db_builder->$name($args[0], $args[1], $args[2], $args[3]);
+				break;
+				default:
+					// Here comes the snail...
+					call_user_func_array(array($this->db_builder, $name), $args);
+				break;
+			}
+		}
+
+		return $this;
+	}
+
+	/**
 	 * Finds and loads a single database row into the object.
 	 *
 	 * @chainable
-	 * @param   mixed  primary key or an array of clauses
+	 * @param   mixed  primary key
 	 * @param   bool   ignore loading of columns that have been modified
 	 * @return  ORM
 	 */
 	public function find($id = NULL, $ignore_changed = FALSE)
 	{
+		$this->build(Database::SELECT);
+
 		if ($id !== NULL)
 		{
-			if (is_array($id))
-			{
-				// Search for all clauses
-				$this->db_builder->where($id[0], $id[1], $id[2]);
-			}
-			else
-			{
-				// Search for a specific column
-				$this->db_builder->where($this->table_name.'.'.$this->unique_key($id), '=', $id);
-			}
+			// Search for a specific column
+			$this->db_builder->where($this->table_name.'.'.$this->unique_key($id), '=', $id);
 		}
 
 		return $this->load_result(FALSE, $ignore_changed);
@@ -675,16 +708,18 @@ class ORM {
 	 */
 	public function find_all($limit = NULL, $offset = NULL)
 	{
+		$this->build(Database::SELECT);
+
 		if ($limit !== NULL AND ! isset($this->db_applied['limit']))
 		{
 			// Set limit
-			$this->limit($limit);
+			$this->db_builder->limit($limit);
 		}
 
 		if ($offset !== NULL AND ! isset($this->db_applied['offset']))
 		{
 			// Set offset
-			$this->offset($offset);
+			$this->db_builder->offset($offset);
 		}
 
 		return $this->load_result(TRUE);
@@ -725,7 +760,6 @@ class ORM {
 	 */
 	public function validate(Validate $array, $save = FALSE, & $errors)
 	{
-
 		if (count($array) == 0)
 			return FALSE;
 
@@ -800,7 +834,7 @@ class ORM {
 
 				$result = DB::insert($this->table_name)
 					->columns(array_keys($data))
-					->values($data)
+					->values(array_values($data))
 					->execute($this->db);
 
 				if ($result)
@@ -895,6 +929,40 @@ class ORM {
 	}
 
 	/**
+	 * Updates all existing records
+	 *
+	 * @chainable
+	 * @return  ORM
+	 */
+	public function save_all()
+	{
+		$this->build(Database::UPDATE);
+
+		if (empty($this->changed))
+			return $this;
+
+		$data = array();
+		foreach ($this->changed as $column)
+		{
+			// Compile changed data
+			$data[$column] = $this->object[$column];
+		}
+
+		if (is_array($this->updated_column))
+		{
+			// Fill the updated column
+			$column = $this->updated_column['column'];
+			$format = $this->updated_column['format'];
+
+			$data[$column] = $this->object[$column] = ($format === TRUE) ? time() : date($format);
+		}
+
+		$this->db_builder->set($data)->execute($this->db);
+
+		return $this;
+	}
+
+	/**
 	 * Deletes the current object from the database. This does NOT destroy
 	 * relationships that have been created with other objects.
 	 *
@@ -923,31 +991,15 @@ class ORM {
 	 * relationships that have been created with other objects.
 	 *
 	 * @chainable
-	 * @param   array  ids to delete
 	 * @return  ORM
 	 */
-	public function delete_all($ids = NULL)
+	public function delete_all()
 	{
-		if (is_array($ids))
-		{
-			// Delete only given ids
-			DB::delete($this->table_name)
-				->where($this->primary_key, 'IN', $ids)
-				->execute($this->db);
-		}
-		elseif ($ids === NULL)
-		{
-			// Delete all records
-			DB::delete($this->table_name)
-				->execute($this->db);
-		}
-		else
-		{
-			// Do nothing - safeguard
-			return $this;
-		}
+		$this->build(Database::DELETE);
 
-		return $this->clear();
+		$this->db_builder->execute($this->db);
+
+		return $this->reload();
 	}
 
 	/**
@@ -959,7 +1011,7 @@ class ORM {
 	public function clear()
 	{
 		// Create an array with all the columns set to NULL
-		$values  = array_combine($this->table_columns, array_fill(0, count($this->table_columns), NULL));
+		$values = array_combine($this->table_columns, array_fill(0, count($this->table_columns), NULL));
 
 		// Replace the current object with an empty one
 		$this->load_values($values);
@@ -1152,17 +1204,6 @@ class ORM {
 		// Proxy to database
 		return $this->db->list_columns($this->table_name);
 	}
-
-	/**
-	 * Proxy method to Database field_data.
-	 *
-	 * @return  array
-	 */
-/*	public function field_data()
-	{
-		// Proxy to database
-		return $this->db->field_data($this->table_name);
-	}*/
 
 	/**
 	 * Proxy method to Database field_data.
@@ -1439,11 +1480,11 @@ class ORM {
 	 * @return  ORM           for single rows
 	 * @return  ORM_Iterator  for multiple rows
 	 */
-	protected function load_result($array = FALSE, $ignore_changed = FALSE)
+	protected function load_result($multiple = FALSE, $ignore_changed = FALSE)
 	{
 		$this->db_builder->from($this->table_name);
 
-		if ($array === FALSE)
+		if ($multiple === FALSE)
 		{
 			// Only fetch 1 record
 			$this->db_builder->limit(1);
@@ -1467,55 +1508,57 @@ class ORM {
 				}
 				else
 				{
-					// Use object
+					// Use object as name
 					$this->with($object);
 				}
 			}
 		}
 
-		if ( ! isset($this->db_applied['orderby']) AND ! empty($this->sorting))
+		if ( ! isset($this->db_applied['order_by']) AND ! empty($this->sorting))
 		{
 			$sorting = array();
 			foreach ($this->sorting as $column => $direction)
 			{
 				if (strpos($column, '.') === FALSE)
 				{
-					// Keeps sorting working properly when using JOINs on
-					// tables with columns of the same name
+					// Sorting column for use in JOINs
 					$column = $this->table_name.'.'.$column;
 				}
 
 				$sorting[$column] = $direction;
 				$this->db_builder->order_by($column, $direction);
 			}
-
-			// Apply the user-defined sorting
-//			$this->db_builder->order_by($sorting);
 		}
 
-		// Load the result
-		$result = $this->db_builder->execute($this->db);
-
-		$this->reset();
-
-		if ($array === TRUE)
+		if ($multiple === TRUE)
 		{
-			// Return an iterated result
-			return new ORM_Iterator($this, $result);
-		}
+			// Return database iterator casting to this object type
+			$result = $this->db_builder->as_object(get_class($this))->execute($this->db);
 
-		if ($result->count() === 1)
-		{
-			// Load object values
-			$this->load_values($result->current(), $ignore_changed);
+			$this->reset();
+
+			return $result;
 		}
 		else
 		{
-			// Clear the object, nothing was found
-			$this->clear();
-		}
+			// Load the result as an associative array
+			$result = $this->db_builder->as_assoc()->execute($this->db);
 
-		return $this;
+			$this->reset();
+
+			if ($result->count() === 1)
+			{
+				// Load object values
+				$this->load_values($result->current(), $ignore_changed);
+			}
+			else
+			{
+				// Clear the object, nothing was found
+				$this->clear();
+			}
+
+			return $this;
+		}
 	}
 
 	/**
@@ -1527,7 +1570,7 @@ class ORM {
 	 */
 	protected function load_relations(array $target, ORM $model)
 	{
-		$result = DB::select()->select(array($model->foreign_key(NULL), 'id'))
+		$result = DB::select(array($model->foreign_key(NULL), 'id'))
 			->from($target['table_name'])
 			->where($this->foreign_key($target['column_name']), '=', $this->primary_key_value)
 			->execute($this->db);
@@ -1544,7 +1587,7 @@ class ORM {
 	/**
 	 * Returns whether or not primary key is empty
 	 *
-	 * @return bool
+	 * @return  bool
 	 */
 	protected function empty_primary_key()
 	{
@@ -1554,18 +1597,20 @@ class ORM {
 	/**
 	 * Returns last executed query
 	 *
-	 * @return string
+	 * @return  string
 	 */
-	public function last_query() {
-			return $this->db->last_query;
+	public function last_query()
+	{
+		return $this->db->last_query;
 	}
 
 	/**
-	 * Clears Query Builder settings
+	 * Clears query builder
 	 */
-	protected function reset() {
-			$this->db_builder->reset();
-			$this->db_applied = array();
+	protected function reset()
+	{
+		$this->db_pending = array();
+		$this->db_applied = array();
 	}
 
 } // End ORM
