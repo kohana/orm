@@ -283,7 +283,7 @@ class ORM {
 
 			return $this->_object[$column];
 		}
-		elseif (isset($this->_related[$column]))
+		elseif (isset($this->_related[$column]) AND $this->_related[$column]->_loaded)
 		{
 			// Return related model that has already been loaded
 			return $this->_related[$column];
