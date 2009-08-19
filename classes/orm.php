@@ -390,7 +390,10 @@ class ORM {
 		}
 		elseif (isset($this->_belongs_to[$column]))
 		{
-			// Update the belongs_to relationship with the given model's primary key
+			// Update related object itself
+			$this->_related[$column] = $value;
+
+			// Update the foreign key of this model
 			$this->_object[$this->_belongs_to[$column]['foreign_key']] = $value->_primary_key;
 		}
 		else
