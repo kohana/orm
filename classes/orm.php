@@ -377,7 +377,12 @@ class ORM {
 
 		if (array_key_exists($column, $this->_object))
 		{
-			if (in_array($column, $this->_table_columns))
+			// Store previous value to see if there is a change
+			$previous = $this->_object[$column];
+
+			$this->_object[$column] = $this->_load_type($column, $value);
+
+			if (isset($this->_table_columns[$column]) AND $this->_object[$column] !== $previous)
 			{
 				// Data has changed
 				$this->_changed[$column] = $column;
@@ -385,8 +390,6 @@ class ORM {
 				// Object is no longer saved
 				$this->_saved = FALSE;
 			}
-
-			$this->_object[$column] = $this->_load_type($column, $value);
 		}
 		elseif (isset($this->_belongs_to[$column]))
 		{
@@ -960,15 +963,19 @@ class ORM {
 	{
 		if ($force === TRUE OR empty($this->_table_columns))
 		{
-			if (isset(ORM::$_column_cache[$this->_object_name]))
+			if ( ! isset(ORM::$_column_cache[$this->_object_name]))
 			{
 				// Use cached column information
 				$this->_table_columns = ORM::$_column_cache[$this->_object_name];
 			}
 			else
 			{
-				// Load table columns
-				ORM::$_column_cache[$this->_object_name] = $this->_table_columns = $this->list_columns();
+				// List columns and mirror for performance
+				$this->_table_columns = $this->list_columns();
+				$this->_table_columns = array_combine($this->_table_columns, $this->_table_columns);
+
+				// Load column cache
+				ORM::$_column_cache[$this->_object_name] = $this->_table_columns;
 			}
 		}
 
