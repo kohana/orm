@@ -963,7 +963,7 @@ class ORM {
 	{
 		if ($force === TRUE OR empty($this->_table_columns))
 		{
-			if ( ! isset(ORM::$_column_cache[$this->_object_name]))
+			if (isset(ORM::$_column_cache[$this->_object_name]))
 			{
 				// Use cached column information
 				$this->_table_columns = ORM::$_column_cache[$this->_object_name];
