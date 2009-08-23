@@ -124,7 +124,7 @@ class ORM {
 	{
 		// Set the object name and plural name
 		$this->_object_name   = strtolower(substr(get_class($this), 6));
-		$this->_object_plural = inflector::plural($this->_object_name);
+		$this->_object_plural = Inflector::plural($this->_object_name);
 
 		if ( ! isset($this->_sorting))
 		{
@@ -245,7 +245,7 @@ class ORM {
 	 */
 	public function __call($method, array $args)
 	{
-		if (in_array($method, self::$_properties))
+		if (in_array($method, ORM::$_properties))
 		{
 			if ($method === 'loaded')
 			{
@@ -255,7 +255,7 @@ class ORM {
 			// Return the property
 			return $this->{'_'.$method};
 		}
-		elseif (in_array($method, self::$_db_methods))
+		elseif (in_array($method, ORM::$_db_methods))
 		{
 			// Add pending database call which is executed after query type is determined
 			$this->_db_pending[] = array('name' => $method, 'args' => $args);
@@ -454,7 +454,7 @@ class ORM {
 			if ($this->_table_names_plural === TRUE)
 			{
 				// Make the table name plural
-				$this->_table_name = inflector::plural($this->_table_name);
+				$this->_table_name = Inflector::plural($this->_table_name);
 			}
 		}
 
@@ -482,7 +482,7 @@ class ORM {
 
 		foreach ($this->_has_many as $alias => $details)
 		{
-			$defaults['model']       = inflector::singular($alias);
+			$defaults['model']       = Inflector::singular($alias);
 			$defaults['foreign_key'] = $this->_object_name.$this->_foreign_key_suffix;
 			$defaults['through']     = NULL;
 
@@ -500,6 +500,7 @@ class ORM {
 	 */
 	protected function _validate()
 	{
+		// The Model data is added right before the validation runs
 		$this->_validate = Validate::factory(array());
 
 		foreach ($this->_rules as $field => $rules)
@@ -760,6 +761,18 @@ class ORM {
 		$this->_validate->exchangeArray($this->_object);
 
 		return $this->_validate->check();
+	}
+
+	/**
+	 * Returns validation errors
+	 *
+	 * @param   string  file to load error messages from
+	 * @param   mixed   translate the message
+	 * @return  array
+	 */
+	public function errors($file = NULL, $translate = TRUE)
+	{
+		$this->_validate->errors($file, $translate);
 	}
 
 	/**
