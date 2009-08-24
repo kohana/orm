@@ -760,7 +760,12 @@ class ORM {
 	{
 		$this->_validate->exchangeArray($this->_object);
 
-		return $this->_validate->check();
+		$status = $this->_validate->check();
+
+		// Get the updated data from the validate object
+		$this->values($this->_validate->as_array());
+
+		return $status;
 	}
 
 	/**
@@ -772,7 +777,7 @@ class ORM {
 	 */
 	public function errors($file = NULL, $translate = TRUE)
 	{
-		$this->_validate->errors($file, $translate);
+		return $this->_validate->errors($file, $translate);
 	}
 
 	/**
