@@ -765,6 +765,11 @@ class ORM {
 			// Initialize the validation object
 			$this->_validate();
 		}
+		else
+		{
+			// Validation object has been created, just exchange the data array
+			$this->_validate->exchangeArray($this->_object);
+		}
 
 		return $this->_validate->check();
 	}
