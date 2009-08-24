@@ -503,6 +503,9 @@ class ORM {
 		// The Model data is added right before the validation runs
 		$this->_validate = Validate::factory(array());
 
+		// Set expected fields
+		$this->_validate->labels($this->_table_columns);
+
 		foreach ($this->_rules as $field => $rules)
 		{
 			$this->_validate->rules($field, $rules);
@@ -775,7 +778,7 @@ class ORM {
 	 * @param   mixed   translate the message
 	 * @return  array
 	 */
-	public function errors($file = NULL, $translate = TRUE)
+	public function errors($file = 'messages/validate', $translate = TRUE)
 	{
 		return $this->_validate->errors($file, $translate);
 	}
