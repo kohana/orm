@@ -30,6 +30,7 @@ class ORM {
 	protected $_rules     = array();
 	protected $_callbacks = array();
 	protected $_filters   = array();
+	protected $_labels    = array();
 
 	// Current object
 	protected $_object  = array();
@@ -95,7 +96,7 @@ class ORM {
 		'object_name', 'object_plural', // Object
 		'primary_key', 'primary_val', 'table_name', 'table_columns', // Table
 		'has_one', 'belongs_to', 'has_many', 'has_many_through', 'load_with', // Relationships
-		'validate', 'rules', 'callbacks', 'filters', // Validation
+		'validate', 'rules', 'callbacks', 'filters', 'labels' // Validation
 	);
 
 	/**
@@ -137,9 +138,6 @@ class ORM {
 
 		// Clear the object
 		$this->clear();
-
-		// Setup the validation object
-		$this->_validate();
 
 		if ($id !== NULL)
 		{
@@ -500,7 +498,7 @@ class ORM {
 	 */
 	protected function _validate()
 	{
-		$this->_validate = Validate::factory(array());
+		$this->_validate = Validate::factory($this->_object);
 
 		foreach ($this->_rules as $field => $rules)
 		{
@@ -510,6 +508,11 @@ class ORM {
 		foreach ($this->_filters as $field => $filters)
 		{
 			$this->_validate->filters($field, $filters);
+		}
+
+		foreach ($this->_labels as $field => $label)
+		{
+			$this->_validate->label($field, $label);
 		}
 
 		foreach ($this->_callbacks as $field => $callbacks)
@@ -757,7 +760,11 @@ class ORM {
 	 */
 	public function check()
 	{
-		$this->_validate->exchangeArray($this->_object);
+		if ( ! isset($this->_validate))
+		{
+			// Initialize the validation object
+			$this->_validate();
+		}
 
 		return $this->_validate->check();
 	}
