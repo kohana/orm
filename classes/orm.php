@@ -30,6 +30,7 @@ class ORM {
 	protected $_rules     = array();
 	protected $_callbacks = array();
 	protected $_filters   = array();
+	protected $_labels    = array();
 
 	// Current object
 	protected $_object  = array();
@@ -95,7 +96,7 @@ class ORM {
 		'object_name', 'object_plural', // Object
 		'primary_key', 'primary_val', 'table_name', 'table_columns', // Table
 		'has_one', 'belongs_to', 'has_many', 'has_many_through', 'load_with', // Relationships
-		'validate', 'rules', 'callbacks', 'filters', // Validation
+		'validate', 'rules', 'callbacks', 'filters', 'labels', 'loaded' // Validation
 	);
 
 	/**
@@ -137,9 +138,6 @@ class ORM {
 
 		// Clear the object
 		$this->clear();
-
-		// Setup the validation object
-		$this->_validate();
 
 		if ($id !== NULL)
 		{
@@ -214,7 +212,7 @@ class ORM {
 	public function __sleep()
 	{
 		// Store only information about the object
-		return array('object_name', 'object', 'changed', 'loaded', 'saved', 'sorting');
+		return array('_object_name', '_object', '_changed', '_loaded', '_saved', '_sorting');
 	}
 
 	/**
@@ -500,8 +498,7 @@ class ORM {
 	 */
 	protected function _validate()
 	{
-		// The Model data is added right before the validation runs
-		$this->_validate = Validate::factory(array());
+		$this->_validate = Validate::factory($this->_object);
 
 		// Set expected fields
 		$this->_validate->labels($this->_table_columns);
@@ -514,6 +511,11 @@ class ORM {
 		foreach ($this->_filters as $field => $filters)
 		{
 			$this->_validate->filters($field, $filters);
+		}
+
+		foreach ($this->_labels as $field => $label)
+		{
+			$this->_validate->label($field, $label);
 		}
 
 		foreach ($this->_callbacks as $field => $callbacks)
@@ -761,7 +763,16 @@ class ORM {
 	 */
 	public function check()
 	{
-		$this->_validate->exchangeArray($this->_object);
+		if ( ! isset($this->_validate))
+		{
+			// Initialize the validation object
+			$this->_validate();
+		}
+		else
+		{
+			// Validation object has been created, just exchange the data array
+			$this->_validate->exchangeArray($this->_object);
+		}
 
 		$status = $this->_validate->check();
 
@@ -840,7 +851,7 @@ class ORM {
 
 			if ($result)
 			{
-				if ( ! $this->empty_pk())
+				if ($this->empty_pk())
 				{
 					// Load the insert id as the primary key
 					// $result is array(insert_id, total_rows)
@@ -1012,7 +1023,7 @@ class ORM {
 	 */
 	public function has($alias, $model)
 	{
-		$through = ORM::factory($this->_has_many[$alias]['through']);
+		$through = ORM::factory($this->_has_many[Inflector::plural($alias)]['through']);
 
 		// Match this model's primary key in through table
 		$col1 = $this->_object_name.$through->_foreign_key_suffix;
@@ -1033,7 +1044,7 @@ class ORM {
 	 */
 	public function add($alias, ORM $model)
 	{
-		$through = ORM::factory($this->_has_many[$alias]['through']);
+		$through = ORM::factory($this->_has_many[Inflector::plural($alias)]['through']);
 
 		$col1 = $this->_object_name.$through->_foreign_key_suffix;
 		$col2 = $model->_object_name.$through->_foreign_key_suffix;
@@ -1053,7 +1064,7 @@ class ORM {
 	 */
 	public function remove($alias, ORM $model)
 	{
-		$through = ORM::factory($this->_has_many[$alias]['through']);
+		$through = ORM::factory($this->_has_many[Inflector::plural($alias)]['through']);
 
 		// Match this model's primary key in through table
 		$col1 = $this->_object_name.$through->_foreign_key_suffix;
