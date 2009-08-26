@@ -249,6 +249,14 @@ class ORM {
 			{
 				$this->_load();
 			}
+			elseif ($method === 'validate')
+			{
+				if ( ! isset($this->_validate))
+				{
+					// Initialize the validation object
+					$this->_validate();
+				}
+			}
 
 			// Return the property
 			return $this->{'_'.$method};
