@@ -931,7 +931,7 @@ class Kohana_ORM {
 
 		$this->_db_builder->execute($this->_db);
 
-		return $this->reload();
+		return $this->clear();
 	}
 
 	/**
