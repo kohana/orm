@@ -326,17 +326,17 @@ class Kohana_ORM {
 
 			if (isset($this->_has_many[$column]['through']))
 			{
-				// has_many "through" relationship
-				$through = ORM::factory($this->_has_many[$column]['through']);
+				// Grab has_many "through" relationship table
+				$through = $this->_has_many[$column]['through'];
 
-				// Join on through model's target foreign key and target model's primary key
-				$join_col1 = $through->_table_name.'.'.$model->_object_name.$through->_foreign_key_suffix;
+				// Join on through model's target foreign key (far_key) and target model's primary key
+				$join_col1 = $through.'.'.$this->_has_many[$column]['far_key'];
 				$join_col2 = $model->_table_name.'.'.$model->_primary_key;
 
-				$model->join($through->_table_name)->on($join_col1, '=', $join_col2);
+				$model->join($through)->on($join_col1, '=', $join_col2);
 
-				// Through table's source foreign key should be this model's primary key
-				$col = $through->_table_name.'.'.$this->_object_name.$through->_foreign_key_suffix;
+				// Through table's source foreign key (foreign_key) should be this model's primary key
+				$col = $through.'.'.$this->_has_many[$column]['foreign_key'];
 				$val = $this->pk();
 			}
 			else
@@ -476,6 +476,7 @@ class Kohana_ORM {
 			$defaults['model']       = inflector::singular($alias);
 			$defaults['foreign_key'] = $this->_object_name.$this->_foreign_key_suffix;
 			$defaults['through']     = NULL;
+			$defaults['far_key']     = inflector::singular($alias).$this->_foreign_key_suffix;
 
 			$this->_has_many[$alias] = array_merge($defaults, $details);
 		}
@@ -1005,17 +1006,13 @@ class Kohana_ORM {
 	 */
 	public function has($alias, $model)
 	{
-		$through = ORM::factory($this->_has_many[$alias]['through']);
-
-		// Match this model's primary key in through table
-		$col1 = $this->_object_name.$through->_foreign_key_suffix;
-		$val1 = $this->pk();
-
-		// Match other model's primary key in through table
-		$col2 = $model->_object_name.$through->_foreign_key_suffix;
-		$val2 = $model->pk();
-
-		return (bool) $through->where($col1, '=', $val1)->where($col2, '=', $val2)->count_all();
+		// Return count of matches as boolean
+		return (bool) DB::select(array('COUNT("*")', 'records_found'))
+			->from($this->_has_many[$alias]['through'])
+			->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk())
+			->where($this->_has_many[$alias]['far_key'], '=', $model->pk())
+			->execute()
+			->get('records_found');
 	}
 
 	/**
@@ -1023,19 +1020,16 @@ class Kohana_ORM {
 	 *
 	 * @param   string   alias of the has_many "through" relationship
 	 * @param   ORM      related ORM model
+	 * @return  ORM
 	 */
 	public function add($alias, ORM $model)
 	{
-		$through = ORM::factory($this->_has_many[$alias]['through']);
+		DB::insert($this->_has_many[$alias]['through'])
+			->columns(array($this->_has_many[$alias]['foreign_key'], $this->_has_many[$alias]['far_key']))
+			->values(array($this->pk(), $model->pk()))
+			->execute();
 
-		$col1 = $this->_object_name.$through->_foreign_key_suffix;
-		$col2 = $model->_object_name.$through->_foreign_key_suffix;
-
-		// Set through model's keys
-		$through->$col1 = $this->pk();
-		$through->$col2 = $model->pk();
-
-		$through->save();
+		return $this;
 	}
 
 	/**
@@ -1043,20 +1037,16 @@ class Kohana_ORM {
 	 *
 	 * @param   string   alias of the has_many "through" relationship
 	 * @param   ORM      related ORM model
+	 * @return  ORM
 	 */
 	public function remove($alias, ORM $model)
 	{
-		$through = ORM::factory($this->_has_many[$alias]['through']);
+		DB::delete($this->_has_many[$alias]['through'])
+			->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk())
+			->where($this->_has_many[$alias]['far_key'], '=', $model->pk())
+			->execute();
 
-		// Match this model's primary key in through table
-		$col1 = $this->_object_name.$through->_foreign_key_suffix;
-		$val1 = $this->pk();
-
-		// Match other model's primary key in through table
-		$col2 = $model->_object_name.$through->_foreign_key_suffix;
-		$val2 = $model->pk();
-
-		$through->where($col1, '=', $val1)->where($col2, '=', $val2)->delete_all();
+		return $this;
 	}
 
 	/**
