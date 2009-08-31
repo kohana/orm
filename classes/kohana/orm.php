@@ -668,16 +668,7 @@ class Kohana_ORM {
 			switch (count($args))
 			{
 				case 0:
-					if (in_array($name, array('open', 'close', 'cache')))
-					{
-						// Should return ORM, not Database
-						$this->_db_builder->$name();
-					}
-					else
-					{
-						// Support for things like reset_select, reset_write, list_tables
-						return $this->_db_builder->$name();
-					}
+					$this->_db_builder->$name();
 				break;
 				case 1:
 					$this->_db_builder->$name($args[0]);
