@@ -93,7 +93,7 @@ class Kohana_ORM {
 	// Members that have access methods
 	protected static $_properties = array
 	(
-		'object_name', 'object_plural', // Object
+		'object_name', 'object_plural', 'loaded', 'saved', // Object
 		'primary_key', 'primary_val', 'table_name', 'table_columns', // Table
 		'has_one', 'belongs_to', 'has_many', 'has_many_through', 'load_with', // Relationships
 		'validate', 'rules', 'callbacks', 'filters', 'labels' // Validation
