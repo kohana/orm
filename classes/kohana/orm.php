@@ -348,10 +348,6 @@ class Kohana_ORM {
 
 			return $model->where($col, '=', $val);
 		}
-		elseif (isset($this->_ignored_columns[$column]))
-		{
-			return NULL;
-		}
 		else
 		{
 			throw new Kohana_Exception('The :property property does not exist in the :class class',
@@ -373,11 +369,6 @@ class Kohana_ORM {
 			// Object not yet constructed, so we're loading data from a database call cast
 			$this->_preload_data[$column] = $value;
 
-			return;
-		}
-
-		if (isset($this->_ignored_columns[$column]))
-		{
 			return;
 		}
 
@@ -462,12 +453,6 @@ class Kohana_ORM {
 				// Make the table name plural
 				$this->_table_name = inflector::plural($this->_table_name);
 			}
-		}
-
-		if (is_array($this->_ignored_columns))
-		{
-			// Make the ignored columns mirrored = mirrored for performance
-			$this->_ignored_columns = array_combine($this->_ignored_columns, $this->_ignored_columns);
 		}
 
 		foreach ($this->_belongs_to as $alias => $details)
@@ -796,8 +781,11 @@ class Kohana_ORM {
 		$data = array();
 		foreach ($this->_changed as $column)
 		{
-			// Compile changed data
-			$data[$column] = $this->_object[$column];
+			if ( ! in_array($column, $this->_ignored_columns))
+			{
+				// Compile changed data if it's not an ignored column
+				$data[$column] = $this->_object[$column];
+			}
 		}
 
 		if ( ! $this->empty_pk() AND ! isset($this->_changed[$this->_primary_key]))
@@ -876,8 +864,11 @@ class Kohana_ORM {
 		$data = array();
 		foreach ($this->_changed as $column)
 		{
-			// Compile changed data
-			$data[$column] = $this->_object[$column];
+			if ( ! in_array($column, $this->_ignored_columns))
+			{
+				// Compile changed data omitting ignored columns
+				$data[$column] = $this->_object[$column];
+			}
 		}
 
 		if (is_array($this->_updated_column))
