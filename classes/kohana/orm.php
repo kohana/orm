@@ -904,16 +904,19 @@ class Kohana_ORM {
 	 */
 	public function delete($id = NULL)
 	{
-		if ($id === NULL)
+		if ($id !== NULL)
 		{
 			// Use the the primary key value
-			$id = $this->pk();
+			$this->_object[$this->_primary_key] = $id;
 		}
 
-		// Delete this object
-		DB::delete($this->_table_name)
-			->where($this->_primary_key, '=', $id)
-			->execute($this->_db);
+		if ( ! $this->empty_pk())
+		{
+			// Delete this object
+			DB::delete($this->_table_name)
+				->where($this->_primary_key, '=', $id)
+				->execute($this->_db);
+		}
 
 		return $this->clear();
 	}
