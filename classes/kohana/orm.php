@@ -685,12 +685,12 @@ class Kohana_ORM {
 					if (in_array($name, array('open', 'close', 'cache')))
 					{
 						// Should return ORM, not Database
-						$this->_db_builder->$method();
+						$this->_db_builder->$name();
 					}
 					else
 					{
 						// Support for things like reset_select, reset_write, list_tables
-						return $this->_db_builder->$method();
+						return $this->_db_builder->$name();
 					}
 				break;
 				case 1:
