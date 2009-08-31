@@ -839,7 +839,7 @@ class Kohana_ORM {
 
 			if ($result)
 			{
-				if ( ! $this->empty_pk())
+				if ($this->empty_pk())
 				{
 					// Load the insert id as the primary key
 					// $result is array(insert_id, total_rows)
