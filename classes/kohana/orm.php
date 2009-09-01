@@ -48,7 +48,7 @@ class Kohana_ORM {
 	protected $_object_plural;
 	protected $_table_name;
 	protected $_table_columns;
-	protected $_ignored_columns;
+	protected $_ignored_columns = array();
 
 	// Auto-update columns for creation and updates
 	protected $_updated_column = NULL;
