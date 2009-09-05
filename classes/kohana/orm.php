@@ -887,21 +887,21 @@ class Kohana_ORM {
 	 */
 	public function delete($id = NULL)
 	{
-		if ($id !== NULL)
+		if ($id === NULL)
 		{
 			// Use the the primary key value
-			$this->_object[$this->_primary_key] = $id;
+			$id = $this->pk();
 		}
 
-		if ( ! $this->empty_pk())
+		if ( ! empty($id) OR $id === '0')
 		{
-			// Delete this object
+			// Delete the object
 			DB::delete($this->_table_name)
 				->where($this->_primary_key, '=', $id)
 				->execute($this->_db);
 		}
 
-		return $this->clear();
+		return $this;
 	}
 
 	/**
