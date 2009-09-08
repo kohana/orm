@@ -372,7 +372,7 @@ class Kohana_ORM {
 			return;
 		}
 
-		if (array_key_exists($column, $this->_object))
+		if (array_key_exists($column, $this->_object) OR in_array($key, $this->_ignored_columns))
 		{
 			// Store previous value to see if there is a change
 			$previous = $this->_object[$column];
@@ -414,7 +414,7 @@ class Kohana_ORM {
 	{
 		foreach ($values as $key => $value)
 		{
-			if (array_key_exists($key, $this->_object))
+			if (array_key_exists($key, $this->_object) OR in_array($key, $this->_ignored_columns))
 			{
 				// Property of this model
 				$this->__set($key, $value);
