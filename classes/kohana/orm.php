@@ -1002,7 +1002,7 @@ class Kohana_ORM {
 			->from($this->_has_many[$alias]['through'])
 			->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk())
 			->where($this->_has_many[$alias]['far_key'], '=', $model->pk())
-			->execute()
+			->execute($this->_db)
 			->get('records_found');
 	}
 
@@ -1018,7 +1018,7 @@ class Kohana_ORM {
 		DB::insert($this->_has_many[$alias]['through'])
 			->columns(array($this->_has_many[$alias]['foreign_key'], $this->_has_many[$alias]['far_key']))
 			->values(array($this->pk(), $model->pk()))
-			->execute();
+			->execute($this->_db);
 
 		return $this;
 	}
@@ -1035,7 +1035,7 @@ class Kohana_ORM {
 		DB::delete($this->_has_many[$alias]['through'])
 			->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk())
 			->where($this->_has_many[$alias]['far_key'], '=', $model->pk())
-			->execute();
+			->execute($this->_db);
 
 		return $this;
 	}
@@ -1051,7 +1051,7 @@ class Kohana_ORM {
 
 		$records = $this->_db_builder->from($this->_table_name)
 			->select(array('COUNT("*")', 'records_found'))
-			->execute()
+			->execute($this->_db)
 			->get('records_found');
 
 		$this->_reset();
