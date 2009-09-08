@@ -1266,7 +1266,6 @@ class Kohana_ORM {
 
 		if ( ! isset($this->_db_applied['order_by']) AND ! empty($this->_sorting))
 		{
-			$sorting = array();
 			foreach ($this->_sorting as $column => $direction)
 			{
 				if (strpos($column, '.') === FALSE)
@@ -1275,7 +1274,6 @@ class Kohana_ORM {
 					$column = $this->_table_name.'.'.$column;
 				}
 
-				$sorting[$column] = $direction;
 				$this->_db_builder->order_by($column, $direction);
 			}
 		}
