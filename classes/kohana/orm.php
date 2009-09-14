@@ -372,7 +372,7 @@ class Kohana_ORM {
 			return;
 		}
 
-		if (array_key_exists($column, $this->_object) OR in_array($key, $this->_ignored_columns))
+		if (array_key_exists($column, $this->_object) OR in_array($column, $this->_ignored_columns))
 		{
 			// Store previous value to see if there is a change
 			$previous = $this->_object[$column];
