@@ -756,7 +756,17 @@ class Kohana_ORM {
 			$this->_validate->exchangeArray($this->_object);
 		}
 
-		return $this->_validate->check();
+		if ($this->_validate->check())
+		{
+			// Fields may have been modified by filters
+			$this->values($this->_validate->as_array());
+
+			return TRUE;
+		}
+		else
+		{
+			return FALSE;
+		}
 	}
 
 	/**
