@@ -133,6 +133,12 @@ class Kohana_ORM {
 			$this->_sorting = array($this->_primary_key => 'ASC');
 		}
 
+		if ( ! empty($this->_ignored_columns))
+		{
+			// Optimize for performance
+			$this->_ignored_columns = array_combine($this->_ignored_columns, $this->_ignored_columns);
+		}
+
 		// Initialize database
 		$this->_initialize();
 
@@ -372,7 +378,12 @@ class Kohana_ORM {
 			return;
 		}
 
-		if (array_key_exists($column, $this->_object) OR in_array($column, $this->_ignored_columns))
+		if (array_key_exists($column, $this->_ignored_columns))
+		{
+			// No processing for ignored columns, just store it
+			$this->_object[$column] = $value;
+		}
+		elseif (array_key_exists($column, $this->_object))
 		{
 			// Store previous value to see if there is a change
 			$previous = $this->_object[$column];
@@ -414,7 +425,7 @@ class Kohana_ORM {
 	{
 		foreach ($values as $key => $value)
 		{
-			if (array_key_exists($key, $this->_object) OR in_array($key, $this->_ignored_columns))
+			if (array_key_exists($key, $this->_object) OR array_key_exists($key, $this->_ignored_columns))
 			{
 				// Property of this model
 				$this->__set($key, $value);
@@ -783,11 +794,8 @@ class Kohana_ORM {
 		$data = array();
 		foreach ($this->_changed as $column)
 		{
-			if ( ! in_array($column, $this->_ignored_columns))
-			{
-				// Compile changed data if it's not an ignored column
-				$data[$column] = $this->_object[$column];
-			}
+			// Compile changed data
+			$data[$column] = $this->_object[$column];
 		}
 
 		if ( ! $this->empty_pk() AND ! isset($this->_changed[$this->_primary_key]))
@@ -866,11 +874,8 @@ class Kohana_ORM {
 		$data = array();
 		foreach ($this->_changed as $column)
 		{
-			if ( ! in_array($column, $this->_ignored_columns))
-			{
-				// Compile changed data omitting ignored columns
-				$data[$column] = $this->_object[$column];
-			}
+			// Compile changed data omitting ignored columns
+			$data[$column] = $this->_object[$column];
 		}
 
 		if (is_array($this->_updated_column))
