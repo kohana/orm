@@ -405,7 +405,7 @@ class Kohana_ORM {
 			$this->_related[$column] = $value;
 
 			// Update the foreign key of this model
-			$this->_object[$this->_belongs_to[$column]['foreign_key']] = $value->_primary_key;
+			$this->_object[$this->_belongs_to[$column]['foreign_key']] = $value->pk();
 		}
 		else
 		{
