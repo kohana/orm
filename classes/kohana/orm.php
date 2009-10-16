@@ -185,6 +185,8 @@ class Kohana_ORM {
 	 */
 	public function __isset($column)
 	{
+		$this->_load();
+
 		return (isset($this->_object[$column]) OR isset($this->_related[$column]));
 	}
 
@@ -196,6 +198,8 @@ class Kohana_ORM {
 	 */
 	public function __unset($column)
 	{
+		$this->_load();
+
 		unset($this->_object[$column], $this->_changed[$column], $this->_related[$column]);
 	}
 
