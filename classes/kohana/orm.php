@@ -186,8 +186,15 @@ class Kohana_ORM {
 	public function __isset($column)
 	{
 		$this->_load();
-
-		return (isset($this->_object[$column]) OR isset($this->_related[$column]));
+		
+		return
+		(
+			isset($this->_object[$column]) OR
+			isset($this->_related[$column]) OR
+			isset($this->_has_one[$column]) OR
+			isset($this->_belongs_to[$column]) OR
+			isset($this->_has_many[$column])
+		);
 	}
 
 	/**
