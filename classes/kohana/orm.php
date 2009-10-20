@@ -186,7 +186,7 @@ class Kohana_ORM {
 	public function __isset($column)
 	{
 		$this->_load();
-		
+
 		return
 		(
 			isset($this->_object[$column]) OR
@@ -955,7 +955,7 @@ class Kohana_ORM {
 	public function clear()
 	{
 		// Create an array with all the columns set to NULL
-		$values = array_combine($this->_table_columns, array_fill(0, count($this->_table_columns), NULL));
+		$values = array_combine(array_keys($this->_table_columns), array_fill(0, count($this->_table_columns), NULL));
 
 		// Replace the object and reset the object status
 		$this->_object = $this->_changed = $this->_related = array();
@@ -1002,9 +1002,8 @@ class Kohana_ORM {
 			}
 			else
 			{
-				// List columns and mirror for performance
-				$this->_table_columns = $this->list_columns();
-				$this->_table_columns = array_combine($this->_table_columns, $this->_table_columns);
+				// Grab column information from database
+				$this->_table_columns = $this->list_columns(TRUE);
 
 				// Load column cache
 				ORM::$_column_cache[$this->_object_name] = $this->_table_columns;
@@ -1089,12 +1088,13 @@ class Kohana_ORM {
 	/**
 	 * Proxy method to Database list_columns.
 	 *
+	 * @param   bool   show column details
 	 * @return  array
 	 */
-	public function list_columns()
+	public function list_columns($details = FALSE)
 	{
 		// Proxy to database
-		return $this->_db->list_columns($this->_table_name);
+		return $this->_db->list_columns($this->_table_name, NULL, $details);
 	}
 
 	/**
@@ -1209,19 +1209,19 @@ class Kohana_ORM {
 		// Load column data
 		$column = $this->_table_columns[$column];
 
-		if ($value === NULL AND ! empty($column['null']))
+		if ($value === NULL AND $column['IS_NULLABLE'] === 'YES')
 			return $value;
 
-		if ( ! empty($column['binary']) AND ! empty($column['exact']) AND (int) $column['length'] === 1)
+		if ($column['DATA_TYPE'] === 'binary' AND $column['CHARACTER_MAXIMUM_LENGTH'] === 1)
 		{
 			// Use boolean for BINARY(1) fields
-			$column['type'] = 'boolean';
+			$column['DATA_TYPE'] = 'boolean';
 		}
 
-		switch ($column['type'])
+		switch ($column['DATA_TYPE'])
 		{
 			case 'int':
-				if ($value === '' AND ! empty($column['null']))
+				if ($value === '' AND $column['IS_NULLABLE'] === 'YES')
 				{
 					// Forms will only submit strings, so empty integer values must be null
 					$value = NULL;
