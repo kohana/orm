@@ -99,6 +99,9 @@ class Kohana_ORM {
 		'validate', 'rules', 'callbacks', 'filters', 'labels' // Validation
 	);
 
+	// Stores the SQL to PHP type mappings
+	protected static $_orm_types;
+
 	/**
 	 * Creates and returns a new model.
 	 *
@@ -463,6 +466,11 @@ class Kohana_ORM {
 		{
 			// Get database instance
 			$this->_db = Database::instance($this->_db);
+		}
+
+		if ( ! isset(ORM::$_orm_types))
+		{
+			ORM::$_orm_types = Kohana::config('orm_types');
 		}
 
 		if (empty($this->_table_name))
@@ -1203,22 +1211,29 @@ class Kohana_ORM {
 	protected function _load_type($column, $value)
 	{
 		$type = gettype($value);
-		if ($type == 'object' OR $type == 'array' OR ! isset($this->_table_columns[$column]))
-			return $value;
 
-		// Load column data
+		if ($type == 'object' OR $type == 'array' OR ! isset($this->_table_columns[$column]))
+		{
+			// Return raw value if it's an object/array or not defined in column list
+			return $value;
+		}
+
 		$column = $this->_table_columns[$column];
 
 		if ($value === NULL AND $column['IS_NULLABLE'] === 'YES')
-			return $value;
-
-		if ($column['DATA_TYPE'] === 'binary' AND $column['CHARACTER_MAXIMUM_LENGTH'] === 1)
 		{
-			// Use boolean for BINARY(1) fields
-			$column['DATA_TYPE'] = 'boolean';
+			// Return NULL value
+			return NULL;
 		}
 
-		switch ($column['DATA_TYPE'])
+		if ( ! isset(ORM::$_orm_types[$column['DATA_TYPE']]))
+		{
+			// SQL type does not have a PHP mapping in orm_types config
+			throw new Kohana_Exception('Undefined SQL type mapping for :type in :class',
+				array(':type' => $column['DATA_TYPE'], ':class' => get_class($this)));
+		}
+
+		switch (ORM::$_orm_types[$column['DATA_TYPE']]['type'])
 		{
 			case 'int':
 				if ($value === '' AND $column['IS_NULLABLE'] === 'YES')
