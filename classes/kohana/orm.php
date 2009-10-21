@@ -470,6 +470,7 @@ class Kohana_ORM {
 
 		if ( ! isset(ORM::$_orm_types))
 		{
+			// Load type mappings
 			ORM::$_orm_types = Kohana::config('orm_types');
 		}
 
