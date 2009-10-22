@@ -399,12 +399,9 @@ class Kohana_ORM {
 		}
 		elseif (array_key_exists($column, $this->_object))
 		{
-			// Store previous value to see if there is a change
-			$previous = $this->_object[$column];
-
 			$this->_object[$column] = $this->_load_type($column, $value);
 
-			if (isset($this->_table_columns[$column]) AND $this->_object[$column] !== $previous)
+			if (isset($this->_table_columns[$column]))
 			{
 				// Data has changed
 				$this->_changed[$column] = $column;
