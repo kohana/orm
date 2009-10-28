@@ -18,9 +18,9 @@
 class Kohana_ORM {
 
 	// Current relationships
-	protected $_has_one                 = array();
-	protected $_belongs_to              = array();
-	protected $_has_many                = array();
+	protected $_has_one    = array();
+	protected $_belongs_to = array();
+	protected $_has_many   = array();
 
 	// Relationships that should always be joined
 	protected $_load_with = array();
@@ -267,6 +267,12 @@ class Kohana_ORM {
 		{
 			if ($method === 'loaded')
 			{
+				if ( ! isset($this->_object_name))
+				{
+					// Calling loaded method prior to the object being fully initialized
+					return FALSE;
+				}
+
 				$this->_load();
 			}
 			elseif ($method === 'validate')
