@@ -748,6 +748,15 @@ class Kohana_ORM {
 	 */
 	public function find($id = NULL)
 	{
+		if ( ! empty($this->_load_with))
+		{
+			foreach ($this->_load_with as $alias)
+			{
+				// Bind relationship
+				$this->with($alias);
+			}
+		}
+
 		$this->_build(Database::SELECT);
 
 		if ($id !== NULL)
@@ -767,6 +776,15 @@ class Kohana_ORM {
 	 */
 	public function find_all()
 	{
+		if ( ! empty($this->_load_with))
+		{
+			foreach ($this->_load_with as $alias)
+			{
+				// Bind relationship
+				$this->with($alias);
+			}
+		}
+
 		$this->_build(Database::SELECT);
 
 		return $this->_load_result(TRUE);
@@ -1290,24 +1308,6 @@ class Kohana_ORM {
 
 		// Select all columns by default
 		$this->_db_builder->select($this->_table_name.'.*');
-
-		if ( ! empty($this->_load_with))
-		{
-			foreach ($this->_load_with as $alias => $object)
-			{
-				// Join each object into the results
-				if (is_string($alias))
-				{
-					// Use alias
-					$this->with($alias);
-				}
-				else
-				{
-					// Use object as name
-					$this->with($object);
-				}
-			}
-		}
 
 		if ( ! isset($this->_db_applied['order_by']) AND ! empty($this->_sorting))
 		{
