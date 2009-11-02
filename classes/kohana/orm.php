@@ -793,7 +793,7 @@ class Kohana_ORM {
 		if ($this->_validate->check())
 		{
 			// Fields may have been modified by filters
-			$this->values($this->_validate->as_array());
+			$this->_object = array_merge($this->_object, $this->_validate->getArrayCopy());
 
 			return TRUE;
 		}
