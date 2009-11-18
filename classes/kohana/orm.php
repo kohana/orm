@@ -423,6 +423,8 @@ class Kohana_ORM {
 
 			// Update the foreign key of this model
 			$this->_object[$this->_belongs_to[$column]['foreign_key']] = $value->pk();
+
+			$this->_changed[$column] = $this->_belongs_to[$column]['foreign_key'];
 		}
 		else
 		{
