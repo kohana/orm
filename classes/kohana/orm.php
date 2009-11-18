@@ -727,14 +727,15 @@ class Kohana_ORM {
 	}
 
 	/**
-	 * Loads the given model only if it hasn't been loaded yet and a primary key is specified
+	 * Loads the given model
 	 *
 	 * @return  ORM
 	 */
 	protected function _load()
 	{
-		if ( ! $this->_loaded AND ! $this->empty_pk())
+		if ( ! $this->_loaded AND ! $this->empty_pk() AND ! isset($this->_changed[$this->_primary_key]))
 		{
+			// Only load if it hasn't been loaded, and a primary key is specified and hasn't been modified
 			return $this->find($this->pk());
 		}
 	}
