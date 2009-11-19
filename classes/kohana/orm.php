@@ -1069,13 +1069,24 @@ class Kohana_ORM {
 	 *
 	 * @param   string   alias of the has_many "through" relationship
 	 * @param   ORM      related ORM model
+	 * @param   array    additional data to store in "through"/pivot table
 	 * @return  ORM
 	 */
-	public function add($alias, ORM $model)
+	public function add($alias, ORM $model, $data = NULL)
 	{
+		$columns = array($this->_has_many[$alias]['foreign_key'], $this->_has_many[$alias]['far_key']);
+		$values  = array($this->pk(), $model->pk());
+
+		if ($data !== NULL)
+		{
+			// Additional data stored in pivot table
+			$columns = array_merge($columns, array_keys($data));
+			$values  = array_merge($values, array_values($data));
+		}
+
 		DB::insert($this->_has_many[$alias]['through'])
-			->columns(array($this->_has_many[$alias]['foreign_key'], $this->_has_many[$alias]['far_key']))
-			->values(array($this->pk(), $model->pk()))
+			->columns($columns)
+			->values($values)
 			->execute($this->_db);
 
 		return $this;
