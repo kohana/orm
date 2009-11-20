@@ -99,9 +99,6 @@ class Kohana_ORM {
 		'validate', 'rules', 'callbacks', 'filters', 'labels' // Validation
 	);
 
-	// Stores the SQL to PHP type mappings
-	protected static $_orm_types;
-
 	/**
 	 * Creates and returns a new model.
 	 *
@@ -471,12 +468,6 @@ class Kohana_ORM {
 		{
 			// Get database instance
 			$this->_db = Database::instance($this->_db);
-		}
-
-		if ( ! isset(ORM::$_orm_types))
-		{
-			// Load type mappings
-			ORM::$_orm_types = Kohana::config('orm_types');
 		}
 
 		if (empty($this->_table_name))
@@ -1256,28 +1247,16 @@ class Kohana_ORM {
 
 		$column = $this->_table_columns[$column];
 
-		if ($value === NULL AND $column['is_nullable'] === 'YES')
+		if ($value === NULL AND $column['is_nullable'])
 		{
 			// Return NULL value
 			return NULL;
 		}
 
-		if ( ! isset(ORM::$_orm_types[$column['data_type']]))
-		{
-			// SQL type does not have a PHP mapping in orm_types config
-			throw new Kohana_Exception('Undefined SQL type mapping for :type in :class',
-				array(':type' => $column['data_type'], ':class' => get_class($this)));
-		}
-
-		switch (ORM::$_orm_types[$column['data_type']]['type'])
+		switch ($column['type'])
 		{
 			case 'int':
-				if ($value === '' AND $column['is_nullable'] === 'YES')
-				{
-					// Forms will only submit strings, so empty integer values must be null
-					$value = NULL;
-				}
-				elseif ((float) $value > PHP_INT_MAX)
+				if ((float) $value > PHP_INT_MAX)
 				{
 					// This number cannot be represented by a PHP integer, so we convert it to a string
 					$value = (string) $value;
@@ -1290,7 +1269,7 @@ class Kohana_ORM {
 			case 'float':
 				$value = (float) $value;
 			break;
-			case 'boolean':
+			case 'bool':
 				$value = (bool) $value;
 			break;
 			case 'string':
