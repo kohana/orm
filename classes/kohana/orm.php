@@ -1256,23 +1256,23 @@ class Kohana_ORM {
 
 		$column = $this->_table_columns[$column];
 
-		if ($value === NULL AND $column['IS_NULLABLE'] === 'YES')
+		if ($value === NULL AND $column['is_nullable'] === 'YES')
 		{
 			// Return NULL value
 			return NULL;
 		}
 
-		if ( ! isset(ORM::$_orm_types[$column['DATA_TYPE']]))
+		if ( ! isset(ORM::$_orm_types[$column['data_type']]))
 		{
 			// SQL type does not have a PHP mapping in orm_types config
 			throw new Kohana_Exception('Undefined SQL type mapping for :type in :class',
-				array(':type' => $column['DATA_TYPE'], ':class' => get_class($this)));
+				array(':type' => $column['data_type'], ':class' => get_class($this)));
 		}
 
-		switch (ORM::$_orm_types[$column['DATA_TYPE']]['type'])
+		switch (ORM::$_orm_types[$column['data_type']]['type'])
 		{
 			case 'int':
-				if ($value === '' AND $column['IS_NULLABLE'] === 'YES')
+				if ($value === '' AND $column['is_nullable'] === 'YES')
 				{
 					// Forms will only submit strings, so empty integer values must be null
 					$value = NULL;
