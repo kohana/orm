@@ -1123,13 +1123,12 @@ class Kohana_ORM {
 	/**
 	 * Proxy method to Database list_columns.
 	 *
-	 * @param   bool   show column details
 	 * @return  array
 	 */
-	public function list_columns($details = FALSE)
+	public function list_columns()
 	{
 		// Proxy to database
-		return $this->_db->list_columns($this->_table_name, NULL, $details);
+		return $this->_db->list_columns($this->_table_name);
 	}
 
 	/**
