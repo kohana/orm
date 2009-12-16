@@ -17,67 +17,6 @@
  */
 class Kohana_ORM {
 
-	// Current relationships
-	protected $_has_one    = array();
-	protected $_belongs_to = array();
-	protected $_has_many   = array();
-
-	// Relationships that should always be joined
-	protected $_load_with = array();
-
-	// Validation members
-	protected $_validate  = NULL;
-	protected $_rules     = array();
-	protected $_callbacks = array();
-	protected $_filters   = array();
-	protected $_labels    = array();
-
-	// Current object
-	protected $_object  = array();
-	protected $_changed = array();
-	protected $_related = array();
-	protected $_loaded  = FALSE;
-	protected $_saved   = FALSE;
-	protected $_sorting;
-
-	// Foreign key suffix
-	protected $_foreign_key_suffix = '_id';
-
-	// Model table information
-	protected $_object_name;
-	protected $_object_plural;
-	protected $_table_name;
-	protected $_table_columns;
-	protected $_ignored_columns = array();
-
-	// Auto-update columns for creation and updates
-	protected $_updated_column = NULL;
-	protected $_created_column = NULL;
-
-	// Table primary key and value
-	protected $_primary_key  = 'id';
-	protected $_primary_val  = 'name';
-
-	// Array of foreign key name overloads
-	protected $_foreign_key = array();
-
-	// Model configuration
-	protected $_table_names_plural = TRUE;
-	protected $_reload_on_wakeup   = TRUE;
-
-	// Database configuration
-	protected $_db         = 'default';
-	protected $_db_applied = array();
-	protected $_db_pending = array();
-	protected $_db_reset   = TRUE;
-	protected $_db_builder;
-
-	// With calls already applied
-	protected $_with_applied = array();
-
-	// Data to be loaded into the model from a database call cast
-	protected $_preload_data = array();
-
 	// Stores column information for ORM models
 	protected static $_column_cache = array();
 
@@ -115,35 +54,79 @@ class Kohana_ORM {
 		return new $model($id);
 	}
 
+	// Current relationships
+	protected $_has_one    = array();
+	protected $_belongs_to = array();
+	protected $_has_many   = array();
+
+	// Relationships that should always be joined
+	protected $_load_with = array();
+
+	// Validation members
+	protected $_validate  = NULL;
+	protected $_rules     = array();
+	protected $_callbacks = array();
+	protected $_filters   = array();
+	protected $_labels    = array();
+
+	// Current object
+	protected $_object  = array();
+	protected $_changed = array();
+	protected $_related = array();
+	protected $_loaded  = FALSE;
+	protected $_saved   = FALSE;
+	protected $_sorting;
+
+	// Foreign key suffix
+	protected $_foreign_key_suffix = '_id';
+
+	// Model table information
+	protected $_object_name;
+	protected $_object_plural;
+	protected $_table_name;
+	protected $_table_columns;
+	protected $_ignored_columns = array();
+
+	// Auto-update columns for creation and updates
+	protected $_updated_column = NULL;
+	protected $_created_column = NULL;
+
+	// Table primary key, primary value
+	protected $_primary_key  = 'id';
+	protected $_primary_val  = 'name';
+
+	// Primary key value
+	protected $_primary_key_value;
+
+	// Array of foreign key name overloads
+	protected $_foreign_key = array();
+
+	// Model configuration
+	protected $_table_names_plural = TRUE;
+	protected $_reload_on_wakeup   = TRUE;
+
+	// Database configuration
+	protected $_db         = 'default';
+	protected $_db_applied = array();
+	protected $_db_pending = array();
+	protected $_db_reset   = TRUE;
+	protected $_db_builder;
+
+	// With calls already applied
+	protected $_with_applied = array();
+
+	// Data to be loaded into the model from a database call cast
+	protected $_cast_data = array();
+
 	/**
-	 * Prepares the model database connection and loads the object.
+	 * Constructs a new model and loads a record if given
 	 *
 	 * @param   mixed  parameter for find or object to load
 	 * @return  void
 	 */
 	public function __construct($id = NULL)
 	{
-		// Set the object name and plural name
-		$this->_object_name   = strtolower(substr(get_class($this), 6));
-		$this->_object_plural = inflector::plural($this->_object_name);
-
-		if ( ! isset($this->_sorting))
-		{
-			// Default sorting
-			$this->_sorting = array($this->_primary_key => 'ASC');
-		}
-
-		if ( ! empty($this->_ignored_columns))
-		{
-			// Optimize for performance
-			$this->_ignored_columns = array_combine($this->_ignored_columns, $this->_ignored_columns);
-		}
-
-		// Initialize database
 		$this->_initialize();
-
-		// Clear the object
-		$this->clear();
 
 		if ($id !== NULL)
 		{
@@ -160,21 +143,162 @@ class Kohana_ORM {
 			else
 			{
 				// Passing the primary key
-
-				// Set the object's primary key, but don't load it until needed
-				$this->_object[$this->_primary_key] = $id;
-
-				// Object is considered saved until something is set
-				$this->_saved = TRUE;
+				$this->find($id);
 			}
 		}
-		elseif ( ! empty($this->_preload_data))
+		elseif ( ! empty($this->_cast_data))
 		{
 			// Load preloaded data from a database call cast
-			$this->_load_values($this->_preload_data);
+			$this->_load_values($this->_cast_data);
 
-			$this->_preload_data = array();
+			$this->_cast_data = array();
 		}
+	}
+
+	/**
+	 * Prepares the model database connection, determines the table name,
+	 * and loads column information.
+	 *
+	 * @return  void
+	 */
+	protected function _initialize()
+	{
+		// Set the object name and plural name
+		$this->_object_name   = strtolower(substr(get_class($this), 6));
+		$this->_object_plural = inflector::plural($this->_object_name);
+
+		if ( ! is_object($this->_db))
+		{
+			// Get database instance
+			$this->_db = Database::instance($this->_db);
+		}
+
+		if (empty($this->_table_name))
+		{
+			// Table name is the same as the object name
+			$this->_table_name = $this->_object_name;
+
+			if ($this->_table_names_plural === TRUE)
+			{
+				// Make the table name plural
+				$this->_table_name = inflector::plural($this->_table_name);
+			}
+		}
+
+		if ( ! isset($this->_sorting))
+		{
+			// Default sorting
+			$this->_sorting = array($this->_primary_key => 'ASC');
+		}
+
+		if ( ! empty($this->_ignored_columns))
+		{
+			// Optimize for performance
+			$this->_ignored_columns = array_combine($this->_ignored_columns, $this->_ignored_columns);
+		}
+
+		foreach ($this->_belongs_to as $alias => $details)
+		{
+			$defaults['model']       = $alias;
+			$defaults['foreign_key'] = $alias.$this->_foreign_key_suffix;
+
+			$this->_belongs_to[$alias] = array_merge($defaults, $details);
+		}
+
+		foreach ($this->_has_one as $alias => $details)
+		{
+			$defaults['model']       = $alias;
+			$defaults['foreign_key'] = $this->_object_name.$this->_foreign_key_suffix;
+
+			$this->_has_one[$alias] = array_merge($defaults, $details);
+		}
+
+		foreach ($this->_has_many as $alias => $details)
+		{
+			$defaults['model']       = inflector::singular($alias);
+			$defaults['foreign_key'] = $this->_object_name.$this->_foreign_key_suffix;
+			$defaults['through']     = NULL;
+			$defaults['far_key']     = inflector::singular($alias).$this->_foreign_key_suffix;
+
+			$this->_has_many[$alias] = array_merge($defaults, $details);
+		}
+
+		// Load column information
+		$this->reload_columns();
+
+		// Clear initial model state
+		$this->clear();
+	}
+
+
+	/**
+	 * Reload column definitions.
+	 *
+	 * @chainable
+	 * @param   boolean  force reloading
+	 * @return  ORM
+	 */
+	public function reload_columns($force = FALSE)
+	{
+		if ($force === TRUE OR empty($this->_table_columns))
+		{
+			if (isset(ORM::$_column_cache[$this->_object_name]))
+			{
+				// Use cached column information
+				$this->_table_columns = ORM::$_column_cache[$this->_object_name];
+			}
+			else
+			{
+				// Grab column information from database
+				$this->_table_columns = $this->list_columns(TRUE);
+
+				// Load column cache
+				ORM::$_column_cache[$this->_object_name] = $this->_table_columns;
+			}
+		}
+
+		return $this;
+	}
+
+	/**
+	 * Unloads the current object and clears the status.
+	 *
+	 * @chainable
+	 * @return  ORM
+	 */
+	public function clear()
+	{
+		// Create an array with all the columns set to NULL
+		$values = array_combine(array_keys($this->_table_columns), array_fill(0, count($this->_table_columns), NULL));
+
+		// Replace the object and reset the object status
+		$this->_object = $this->_changed = $this->_related = array();
+
+		// Replace the current object with an empty one
+		$this->_load_values($values);
+
+		// Reset primary key
+		$this->_primary_key_value = NULL;
+
+		$this->_reset();
+
+		return $this;
+	}
+
+	/**
+	 * Reloads the current object from the database.
+	 *
+	 * @chainable
+	 * @return  ORM
+	 */
+	public function reload()
+	{
+		$primary_key = $this->pk();
+
+		// Replace the object and reset the object status
+		$this->_object = $this->_changed = $this->_related = array();
+
+		return $this->find($primary_key);
 	}
 
 	/**
@@ -185,8 +309,6 @@ class Kohana_ORM {
 	 */
 	public function __isset($column)
 	{
-		$this->_load();
-
 		return
 		(
 			isset($this->_object[$column]) OR
@@ -205,8 +327,6 @@ class Kohana_ORM {
 	 */
 	public function __unset($column)
 	{
-		$this->_load();
-
 		unset($this->_object[$column], $this->_changed[$column], $this->_related[$column]);
 	}
 
@@ -239,7 +359,7 @@ class Kohana_ORM {
 	 */
 	public function __wakeup()
 	{
-		// Initialize database
+		// Initialize model
 		$this->_initialize();
 
 		if ($this->_reload_on_wakeup === TRUE)
@@ -262,17 +382,7 @@ class Kohana_ORM {
 	{
 		if (in_array($method, self::$_properties))
 		{
-			if ($method === 'loaded')
-			{
-				if ( ! isset($this->_object_name))
-				{
-					// Calling loaded method prior to the object being fully initialized
-					return FALSE;
-				}
-
-				$this->_load();
-			}
-			elseif ($method === 'validate')
+			if ($method === 'validate')
 			{
 				if ( ! isset($this->_validate))
 				{
@@ -308,8 +418,6 @@ class Kohana_ORM {
 	{
 		if (array_key_exists($column, $this->_object))
 		{
-			$this->_load();
-
 			return $this->_object[$column];
 		}
 		elseif (isset($this->_related[$column]) AND $this->_related[$column]->_loaded)
@@ -319,8 +427,6 @@ class Kohana_ORM {
 		}
 		elseif (isset($this->_belongs_to[$column]))
 		{
-			$this->_load();
-
 			$model = $this->_related($column);
 
 			// Use this model's column and foreign model's primary key
@@ -369,7 +475,13 @@ class Kohana_ORM {
 				$val = $this->pk();
 			}
 
-			return $model->where($col, '=', $val);
+			// Move pending db operations to the model we're accessing
+			$model->_db_pending = $this->_db_pending;
+
+			// Clear this model's pending db operations
+			$this->_db_pending = array();
+
+			return $model->where($col, '=', $val)->find_all();
 		}
 		else
 		{
@@ -379,7 +491,7 @@ class Kohana_ORM {
 	}
 
 	/**
-	 * Handles setting of all model values, and tracks changes between values.
+	 * Base set method - this should not be overridden.
 	 *
 	 * @param   string  column name
 	 * @param   mixed   column value
@@ -390,11 +502,24 @@ class Kohana_ORM {
 		if ( ! isset($this->_object_name))
 		{
 			// Object not yet constructed, so we're loading data from a database call cast
-			$this->_preload_data[$column] = $value;
-
-			return;
+			$this->_cast_data[$column] = $value;
 		}
+		else
+		{
+			// Set the model's column to given value
+			$this->set($column, $value);
+		}
+	}
 
+	/**
+	 * Handles setting of column
+	 *
+	 * @param  string  column name
+	 * @param  mixed   column value
+	 * @return void
+	 */
+	public function set($column, $value)
+	{
 		if (array_key_exists($column, $this->_ignored_columns))
 		{
 			// No processing for ignored columns, just store it
@@ -428,130 +553,34 @@ class Kohana_ORM {
 			throw new Kohana_Exception('The :property: property does not exist in the :class: class',
 				array(':property:' => $column, ':class:' => get_class($this)));
 		}
+
+		return $this;
 	}
 
 	/**
 	 * Set values from an array with support for one-one relationships.  This method should be used
 	 * for loading in post data, etc.
 	 *
-	 * @param   array  array of key => val
+	 * @param   array  array of column => val
 	 * @return  ORM
 	 */
 	public function values($values)
 	{
-		foreach ($values as $key => $value)
+		foreach ($values as $column => $value)
 		{
-			if (array_key_exists($key, $this->_object) OR array_key_exists($key, $this->_ignored_columns))
+			if (array_key_exists($column, $this->_object) OR array_key_exists($column, $this->_ignored_columns))
 			{
 				// Property of this model
-				$this->__set($key, $value);
+				$this->set($column, $value);
 			}
-			elseif (isset($this->_belongs_to[$key]) OR isset($this->_has_one[$key]))
+			elseif (isset($this->_belongs_to[$column]) OR isset($this->_has_one[$column]))
 			{
 				// Value is an array of properties for the related model
-				$this->_related[$key] = $value;
+				$this->_related[$column] = $value;
 			}
 		}
 
 		return $this;
-	}
-
-	/**
-	 * Prepares the model database connection, determines the table name,
-	 * and loads column information.
-	 *
-	 * @return  void
-	 */
-	protected function _initialize()
-	{
-		if ( ! is_object($this->_db))
-		{
-			// Get database instance
-			$this->_db = Database::instance($this->_db);
-		}
-
-		if (empty($this->_table_name))
-		{
-			// Table name is the same as the object name
-			$this->_table_name = $this->_object_name;
-
-			if ($this->_table_names_plural === TRUE)
-			{
-				// Make the table name plural
-				$this->_table_name = inflector::plural($this->_table_name);
-			}
-		}
-
-		foreach ($this->_belongs_to as $alias => $details)
-		{
-			$defaults['model']       = $alias;
-			$defaults['foreign_key'] = $alias.$this->_foreign_key_suffix;
-
-			$this->_belongs_to[$alias] = array_merge($defaults, $details);
-		}
-
-		foreach ($this->_has_one as $alias => $details)
-		{
-			$defaults['model']       = $alias;
-			$defaults['foreign_key'] = $this->_object_name.$this->_foreign_key_suffix;
-
-			$this->_has_one[$alias] = array_merge($defaults, $details);
-		}
-
-		foreach ($this->_has_many as $alias => $details)
-		{
-			$defaults['model']       = inflector::singular($alias);
-			$defaults['foreign_key'] = $this->_object_name.$this->_foreign_key_suffix;
-			$defaults['through']     = NULL;
-			$defaults['far_key']     = inflector::singular($alias).$this->_foreign_key_suffix;
-
-			$this->_has_many[$alias] = array_merge($defaults, $details);
-		}
-
-		// Load column information
-		$this->reload_columns();
-	}
-
-	/**
-	 * Initializes validation rules, callbacks, filters, and labels
-	 *
-	 * @return void
-	 */
-	protected function _validate()
-	{
-		$this->_validate = Validate::factory($this->_object);
-
-		foreach ($this->_rules as $field => $rules)
-		{
-			$this->_validate->rules($field, $rules);
-		}
-
-		foreach ($this->_filters as $field => $filters)
-		{
-			$this->_validate->filters($field, $filters);
-		}
-
-		foreach ($this->_labels as $field => $label)
-		{
-			$this->_validate->label($field, $label);
-		}
-
-		foreach ($this->_callbacks as $field => $callbacks)
-		{
-			foreach ($callbacks as $callback)
-			{
-				if (is_string($callback) AND method_exists($this, $callback))
-				{
-					// Callback method exists in current ORM model
-					$this->_validate->callback($field, array($this, $callback));
-				}
-				else
-				{
-					// Try global function
-					$this->_validate->callback($field, $callback);
-				}
-			}
-		}
 	}
 
 	/**
@@ -564,16 +593,16 @@ class Kohana_ORM {
 	{
 		$object = array();
 
-		foreach ($this->_object as $key => $val)
+		foreach ($this->_object as $column => $value)
 		{
 			// Call __get for any user processing
-			$object[$key] = $this->__get($key);
+			$object[$column] = $this->__get($column);
 		}
 
-		foreach ($this->_related as $key => $model)
+		foreach ($this->_related as $column => $model)
 		{
 			// Include any related objects that are already loaded
-			$object[$key] = $model->as_array();
+			$object[$column] = $model->as_array();
 		}
 
 		return $object;
@@ -710,27 +739,13 @@ class Kohana_ORM {
 					$this->_db_builder->$name($args[0], $args[1], $args[2], $args[3]);
 				break;
 				default:
-					// Here comes the snail...
+					// Much slower...
 					call_user_func_array(array($this->_db_builder, $name), $args);
 				break;
 			}
 		}
 
 		return $this;
-	}
-
-	/**
-	 * Loads the given model
-	 *
-	 * @return  ORM
-	 */
-	protected function _load()
-	{
-		if ( ! $this->_loaded AND ! $this->empty_pk() AND ! isset($this->_changed[$this->_primary_key]))
-		{
-			// Only load if it hasn't been loaded, and a primary key is specified and hasn't been modified
-			return $this->find($this->pk());
-		}
 	}
 
 	/**
@@ -746,7 +761,7 @@ class Kohana_ORM {
 		{
 			foreach ($this->_load_with as $alias)
 			{
-				// Bind relationship
+				// Bind auto relationships
 				$this->with($alias);
 			}
 		}
@@ -774,7 +789,7 @@ class Kohana_ORM {
 		{
 			foreach ($this->_load_with as $alias)
 			{
-				// Bind relationship
+				// Bind auto relationships
 				$this->with($alias);
 			}
 		}
@@ -782,6 +797,222 @@ class Kohana_ORM {
 		$this->_build(Database::SELECT);
 
 		return $this->_load_result(TRUE);
+	}
+
+	/**
+	 * Loads a database result, either as a new record for this model, or as
+	 * an iterator for multiple rows.
+	 *
+	 * @chainable
+	 * @param  bool  return an iterator or load a single row
+	 */
+	protected function _load_result($multiple = FALSE)
+	{
+		$this->_db_builder->from($this->_table_name);
+
+		if ($multiple === FALSE)
+		{
+			// Only fetch 1 record
+			$this->_db_builder->limit(1);
+		}
+
+		// Select all columns by default
+		$this->_db_builder->select($this->_table_name.'.*');
+
+		if ( ! isset($this->_db_applied['order_by']) AND ! empty($this->_sorting))
+		{
+			foreach ($this->_sorting as $column => $direction)
+			{
+				if (strpos($column, '.') === FALSE)
+				{
+					// Sorting column for use in JOINs
+					$column = $this->_table_name.'.'.$column;
+				}
+
+				$this->_db_builder->order_by($column, $direction);
+			}
+		}
+
+		if ($multiple === TRUE)
+		{
+			// Return database iterator casting to this object type
+			$result = $this->_db_builder->as_object(get_class($this))->execute($this->_db);
+
+			$this->_reset();
+
+			return $result;
+		}
+		else
+		{
+			// Load the result as an associative array
+			$result = $this->_db_builder->as_assoc()->execute($this->_db);
+
+			$this->_reset();
+
+			if ($result->count() === 1)
+			{
+				// Load object values
+				$this->_load_values($result->current());
+			}
+			else
+			{
+				// Clear the object, nothing was found
+				$this->clear();
+			}
+
+			return $this;
+		}
+	}
+
+	/**
+	 * Loads an array of values into into the current object.
+	 *
+	 * @chainable
+	 * @param   array  values to load
+	 * @return  ORM
+	 */
+	protected function _load_values(array $values)
+	{
+		if (array_key_exists($this->_primary_key, $values))
+		{
+			if ($values[$this->_primary_key] !== NULL)
+			{
+				// Flag as loaded and saved
+				$this->_loaded = $this->_saved = TRUE;
+
+				// Store primary key
+				$this->_primary_key_value = $values[$this->_primary_key];
+			}
+			else
+			{
+				// Not loaded or saved
+				$this->_loaded = $this->_saved = FALSE;
+			}
+		}
+
+		// Related objects
+		$related = array();
+
+		foreach ($values as $column => $value)
+		{
+			if (strpos($column, ':') === FALSE)
+			{
+				// The type of the value can be determined, convert the value
+				$this->_object[$column] = $this->_load_type($column, $value);
+			}
+			else
+			{
+				// Column belongs to a related model
+				list ($prefix, $column) = explode(':', $column, 2);
+
+				$related[$prefix][$column] = $value;
+			}
+		}
+
+		if ( ! empty($related))
+		{
+			foreach ($related as $object => $values)
+			{
+				// Load the related objects with the values in the result
+				$this->_related($object)->_load_values($values);
+			}
+		}
+
+		return $this;
+	}
+
+	/**
+	 * Loads a value according to the types defined by the column metadata.
+	 *
+	 * @param   string  column name
+	 * @param   mixed   value to load
+	 * @return  mixed
+	 */
+	protected function _load_type($column, $value)
+	{
+		$type = gettype($value);
+
+		if ($type == 'object' OR $type == 'array' OR ! isset($this->_table_columns[$column]))
+		{
+			// Return raw value if it's an object/array or not defined in column list
+			return $value;
+		}
+
+		$column = $this->_table_columns[$column];
+
+		if ($value === NULL AND $column['is_nullable'])
+		{
+			// NULL values are allowed
+			return NULL;
+		}
+
+		switch ($column['type'])
+		{
+			case 'int':
+				if ((float) $value > PHP_INT_MAX)
+				{
+					// This number cannot be represented by a PHP integer, so we convert it to a string
+					$value = (string) $value;
+				}
+				else
+				{
+					$value = (int) $value;
+				}
+			break;
+			case 'float':
+				$value = (float) $value;
+			break;
+			case 'bool':
+				$value = (bool) $value;
+			break;
+			case 'string':
+				$value = (string) $value;
+			break;
+		}
+
+		return $value;
+	}
+
+	/**
+	 * Initializes validation rules, callbacks, filters, and labels
+	 *
+	 * @return void
+	 */
+	protected function _validate()
+	{
+		$this->_validate = Validate::factory($this->_object);
+
+		foreach ($this->_rules as $field => $rules)
+		{
+			$this->_validate->rules($field, $rules);
+		}
+
+		foreach ($this->_filters as $field => $filters)
+		{
+			$this->_validate->filters($field, $filters);
+		}
+
+		foreach ($this->_labels as $field => $label)
+		{
+			$this->_validate->label($field, $label);
+		}
+
+		foreach ($this->_callbacks as $field => $callbacks)
+		{
+			foreach ($callbacks as $callback)
+			{
+				if (is_string($callback) AND method_exists($this, $callback))
+				{
+					// Callback method exists in current ORM model
+					$this->_validate->callback($field, array($this, $callback));
+				}
+				else
+				{
+					// Try global function
+					$this->_validate->callback($field, $callback);
+				}
+			}
+		}
 	}
 
 	/**
@@ -815,101 +1046,63 @@ class Kohana_ORM {
 		}
 	}
 
-	/**
-	 * Saves the current object.
-	 *
-	 * @chainable
-	 * @return  ORM
-	 */
-	public function save()
+	public function create()
 	{
-		if (empty($this->_changed))
-			return $this;
-
 		$data = array();
-		foreach ($this->_changed as $column)
+		foreach ($this->_object as $column => $value)
 		{
-			// Compile changed data
-			$data[$column] = $this->_object[$column];
-		}
-
-		if ( ! $this->empty_pk() AND ! isset($this->_changed[$this->_primary_key]))
-		{
-			// Primary key isn't empty and hasn't been changed so do an update
-
-			if (is_array($this->_updated_column))
+			if ( ! isset($this->_ignored_columns[$column]))
 			{
-				// Fill the updated column
-				$column = $this->_updated_column['column'];
-				$format = $this->_updated_column['format'];
-
-				$data[$column] = $this->_object[$column] = ($format === TRUE) ? time() : date($format);
-			}
-
-			$query = DB::update($this->_table_name)
-				->set($data)
-				->where($this->_primary_key, '=', $this->pk())
-				->execute($this->_db);
-
-			// Object has been saved
-			$this->_saved = TRUE;
-		}
-		else
-		{
-			if (is_array($this->_created_column))
-			{
-				// Fill the created column
-				$column = $this->_created_column['column'];
-				$format = $this->_created_column['format'];
-
-				$data[$column] = $this->_object[$column] = ($format === TRUE) ? time() : date($format);
-			}
-
-			$result = DB::insert($this->_table_name)
-				->columns(array_keys($data))
-				->values(array_values($data))
-				->execute($this->_db);
-
-			if ($result)
-			{
-				if ($this->empty_pk())
-				{
-					// Load the insert id as the primary key
-					// $result is array(insert_id, total_rows)
-					$this->_object[$this->_primary_key] = $result[0];
-				}
-
-				// Object is now loaded and saved
-				$this->_loaded = $this->_saved = TRUE;
+				// Generate list of column => values
+				$data[$column] = $value;
 			}
 		}
 
-		if ($this->_saved === TRUE)
+		if (is_array($this->_created_column))
 		{
-			// All changes have been saved
-			$this->_changed = array();
+			// Fill the created column
+			$column = $this->_created_column['column'];
+			$format = $this->_created_column['format'];
+
+			$data[$column] = $this->_object[$column] = ($format === TRUE) ? time() : date($format);
 		}
+
+		$result = DB::insert($this->_table_name)
+			->columns(array_keys($data))
+			->values(array_values($data))
+			->execute($this->_db);
+
+		// Load the insert id as the primary key
+		$this->_object[$this->_primary_key] = $this->_primary_key_value = $result[0];
+
+		// Object is now loaded and saved
+		$this->_loaded = $this->_saved = TRUE;
+
+		// All changes have been saved
+		$this->_changed = array();
 
 		return $this;
 	}
 
 	/**
-	 * Updates all existing records
+	 * Updates a single record or multiple records
 	 *
 	 * @chainable
+	 * @param   mixed  primary key of record to update, NULL for current record, TRUE for multiple records
 	 * @return  ORM
 	 */
-	public function save_all()
+	public function update($id = NULL)
 	{
-		$this->_build(Database::UPDATE);
-
 		if (empty($this->_changed))
+		{
+			// Nothing to update
 			return $this;
+		}
 
 		$data = array();
 		foreach ($this->_changed as $column)
 		{
-			// Compile changed data omitting ignored columns
+			// Compile changed data
 			$data[$column] = $this->_object[$column];
 		}
 
@@ -922,119 +1115,76 @@ class Kohana_ORM {
 			$data[$column] = $this->_object[$column] = ($format === TRUE) ? time() : date($format);
 		}
 
-		$this->_db_builder->set($data)->execute($this->_db);
+		if ($id === TRUE)
+		{
+			$this->_build(Database::UPDATE);
+
+			// Update multiple records
+			$this->_db_builder->set($data)->execute($this->_db);
+
+			$this->_reset();
+		}
+		else
+		{
+			if ($id === NULL)
+			{
+				// Use primary key value
+				$id = $this->pk();
+			}
+
+			// Update a single record
+			$query = DB::update($this->_table_name)
+				->set($data)
+				->where($this->_primary_key, '=', $id)
+				->execute($this->_db);
+
+			if (isset($data[$this->_primary_key]))
+			{
+				// Primary key was changed, reflect it
+				$this->_primary_key_value = $data[$this->_primary_key];
+			}
+
+			// Object has been saved
+			$this->_saved = TRUE;
+
+			// All changes have been saved
+			$this->_changed = array();
+		}
 
 		return $this;
 	}
 
 	/**
-	 * Deletes the current object from the database. This does NOT destroy
-	 * relationships that have been created with other objects.
+	 * Deletes a single record or multiple records, ignoring relationships.
 	 *
 	 * @chainable
-	 * @param   mixed  id to delete
+	 * @param   mixed  primary key of record to delete, NULL for current record, TRUE for multiple records
 	 * @return  ORM
 	 */
 	public function delete($id = NULL)
 	{
-		if ($id === NULL)
+		if ($id === TRUE)
 		{
-			// Use the the primary key value
-			$id = $this->pk();
-		}
+			$this->_build(Database::DELETE);
 
-		if ( ! empty($id) OR $id === '0')
+			// Delete multiple records
+			$this->_db_builder->execute($this->_db);
+		}
+		else
 		{
+			if ($id === NULL)
+			{
+				// Use primary key value
+				$id = $this->pk();
+			}
+
 			// Delete the object
 			DB::delete($this->_table_name)
 				->where($this->_primary_key, '=', $id)
 				->execute($this->_db);
 		}
 
-		return $this;
-	}
-
-	/**
-	 * Delete all objects in the associated table. This does NOT destroy
-	 * relationships that have been created with other objects.
-	 *
-	 * @chainable
-	 * @return  ORM
-	 */
-	public function delete_all()
-	{
-		$this->_build(Database::DELETE);
-
-		$this->_db_builder->execute($this->_db);
-
 		return $this->clear();
-	}
-
-	/**
-	 * Unloads the current object and clears the status.
-	 *
-	 * @chainable
-	 * @return  ORM
-	 */
-	public function clear()
-	{
-		// Create an array with all the columns set to NULL
-		$values = array_combine(array_keys($this->_table_columns), array_fill(0, count($this->_table_columns), NULL));
-
-		// Replace the object and reset the object status
-		$this->_object = $this->_changed = $this->_related = array();
-
-		// Replace the current object with an empty one
-		$this->_load_values($values);
-
-		$this->_reset();
-
-		return $this;
-	}
-
-	/**
-	 * Reloads the current object from the database.
-	 *
-	 * @chainable
-	 * @return  ORM
-	 */
-	public function reload()
-	{
-		$primary_key = $this->pk();
-
-		// Replace the object and reset the object status
-		$this->_object = $this->_changed = $this->_related = array();
-
-		return $this->find($primary_key);
-	}
-
-	/**
-	 * Reload column definitions.
-	 *
-	 * @chainable
-	 * @param   boolean  force reloading
-	 * @return  ORM
-	 */
-	public function reload_columns($force = FALSE)
-	{
-		if ($force === TRUE OR empty($this->_table_columns))
-		{
-			if (isset(ORM::$_column_cache[$this->_object_name]))
-			{
-				// Use cached column information
-				$this->_table_columns = ORM::$_column_cache[$this->_object_name];
-			}
-			else
-			{
-				// Grab column information from database
-				$this->_table_columns = $this->list_columns(TRUE);
-
-				// Load column cache
-				ORM::$_column_cache[$this->_object_name] = $this->_table_columns;
-			}
-		}
-
-		return $this;
 	}
 
 	/**
@@ -1175,195 +1325,13 @@ class Kohana_ORM {
 	}
 
 	/**
-	 * Loads an array of values into into the current object.
-	 *
-	 * @chainable
-	 * @param   array  values to load
-	 * @return  ORM
-	 */
-	protected function _load_values(array $values)
-	{
-		if (array_key_exists($this->_primary_key, $values))
-		{
-			// Set the loaded and saved object status based on the primary key
-			$this->_loaded = $this->_saved = ($values[$this->_primary_key] !== NULL);
-		}
-
-		// Related objects
-		$related = array();
-
-		foreach ($values as $column => $value)
-		{
-			if (strpos($column, ':') === FALSE)
-			{
-				if ( ! isset($this->_changed[$column]))
-				{
-					if (isset($this->_table_columns[$column]))
-					{
-						// The type of the value can be determined, convert the value
-						$value = $this->_load_type($column, $value);
-					}
-
-					$this->_object[$column] = $value;
-				}
-			}
-			else
-			{
-				list ($prefix, $column) = explode(':', $column, 2);
-
-				$related[$prefix][$column] = $value;
-			}
-		}
-
-		if ( ! empty($related))
-		{
-			foreach ($related as $object => $values)
-			{
-				// Load the related objects with the values in the result
-				$this->_related($object)->_load_values($values);
-			}
-		}
-
-		return $this;
-	}
-
-	/**
-	 * Loads a value according to the types defined by the column metadata.
-	 *
-	 * @param   string  column name
-	 * @param   mixed   value to load
-	 * @return  mixed
-	 */
-	protected function _load_type($column, $value)
-	{
-		$type = gettype($value);
-
-		if ($type == 'object' OR $type == 'array' OR ! isset($this->_table_columns[$column]))
-		{
-			// Return raw value if it's an object/array or not defined in column list
-			return $value;
-		}
-
-		$column = $this->_table_columns[$column];
-
-		if ($value === NULL AND $column['is_nullable'])
-		{
-			// Return NULL value
-			return NULL;
-		}
-
-		switch ($column['type'])
-		{
-			case 'int':
-				if ((float) $value > PHP_INT_MAX)
-				{
-					// This number cannot be represented by a PHP integer, so we convert it to a string
-					$value = (string) $value;
-				}
-				else
-				{
-					$value = (int) $value;
-				}
-			break;
-			case 'float':
-				$value = (float) $value;
-			break;
-			case 'bool':
-				$value = (bool) $value;
-			break;
-			case 'string':
-				$value = (string) $value;
-			break;
-		}
-
-		return $value;
-	}
-
-	/**
-	 * Loads a database result, either as a new object for this model, or as
-	 * an iterator for multiple rows.
-	 *
-	 * @chainable
-	 * @param   boolean       return an iterator or load a single row
-	 * @return  ORM           for single rows
-	 * @return  ORM_Iterator  for multiple rows
-	 */
-	protected function _load_result($multiple = FALSE)
-	{
-		$this->_db_builder->from($this->_table_name);
-
-		if ($multiple === FALSE)
-		{
-			// Only fetch 1 record
-			$this->_db_builder->limit(1);
-		}
-
-		// Select all columns by default
-		$this->_db_builder->select($this->_table_name.'.*');
-
-		if ( ! isset($this->_db_applied['order_by']) AND ! empty($this->_sorting))
-		{
-			foreach ($this->_sorting as $column => $direction)
-			{
-				if (strpos($column, '.') === FALSE)
-				{
-					// Sorting column for use in JOINs
-					$column = $this->_table_name.'.'.$column;
-				}
-
-				$this->_db_builder->order_by($column, $direction);
-			}
-		}
-
-		if ($multiple === TRUE)
-		{
-			// Return database iterator casting to this object type
-			$result = $this->_db_builder->as_object(get_class($this))->execute($this->_db);
-
-			$this->_reset();
-
-			return $result;
-		}
-		else
-		{
-			// Load the result as an associative array
-			$result = $this->_db_builder->as_assoc()->execute($this->_db);
-
-			$this->_reset();
-
-			if ($result->count() === 1)
-			{
-				// Load object values
-				$this->_load_values($result->current());
-			}
-			else
-			{
-				// Clear the object, nothing was found
-				$this->clear();
-			}
-
-			return $this;
-		}
-	}
-
-	/**
 	 * Returns the value of the primary key
 	 *
 	 * @return  mixed  primary key
 	 */
 	public function pk()
 	{
-		return $this->_object[$this->_primary_key];
-	}
-
-	/**
-	 * Returns whether or not primary key is empty
-	 *
-	 * @return  bool
-	 */
-	protected function empty_pk()
-	{
-		return (empty($this->_object[$this->_primary_key]) AND $this->_object[$this->_primary_key] !== '0');
+		return $this->_primary_key_value;
 	}
 
 	/**
