@@ -475,13 +475,7 @@ class Kohana_ORM {
 				$val = $this->pk();
 			}
 
-			// Move pending db operations to the model we're accessing
-			$model->_db_pending = $this->_db_pending;
-
-			// Clear this model's pending db operations
-			$this->_db_pending = array();
-
-			return $model->where($col, '=', $val)->find_all();
+			return $model->where($col, '=', $val);
 		}
 		else
 		{
