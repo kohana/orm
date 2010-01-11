@@ -280,7 +280,7 @@ class Kohana_ORM {
 		// Reset primary key
 		$this->_primary_key_value = NULL;
 
-		$this->_reset();
+		$this->reset();
 
 		return $this;
 	}
@@ -832,7 +832,7 @@ class Kohana_ORM {
 			// Return database iterator casting to this object type
 			$result = $this->_db_builder->as_object(get_class($this))->execute($this->_db);
 
-			$this->_reset();
+			$this->reset();
 
 			return $result;
 		}
@@ -841,7 +841,7 @@ class Kohana_ORM {
 			// Load the result as an associative array
 			$result = $this->_db_builder->as_assoc()->execute($this->_db);
 
-			$this->_reset();
+			$this->reset();
 
 			if ($result->count() === 1)
 			{
@@ -1116,7 +1116,7 @@ class Kohana_ORM {
 			// Update multiple records
 			$this->_db_builder->set($data)->execute($this->_db);
 
-			$this->_reset();
+			$this->reset();
 		}
 		else
 		{
@@ -1258,7 +1258,7 @@ class Kohana_ORM {
 			->execute($this->_db)
 			->get('records_found');
 
-		$this->_reset();
+		$this->reset();
 
 		// Return the total number of records in a table
 		return $records;
@@ -1344,7 +1344,7 @@ class Kohana_ORM {
 	 *
 	 * @param  bool  Pass FALSE to avoid resetting on the next call
 	 */
-	protected function _reset($next = TRUE)
+	public function reset($next = TRUE)
 	{
 		if ($next AND $this->_db_reset)
 		{
