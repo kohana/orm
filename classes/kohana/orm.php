@@ -35,7 +35,7 @@ class Kohana_ORM {
 		'object_name', 'object_plural', 'loaded', 'saved', // Object
 		'primary_key', 'primary_val', 'table_name', 'table_columns', // Table
 		'has_one', 'belongs_to', 'has_many', 'has_many_through', 'load_with', // Relationships
-		'validate', 'rules', 'callbacks', 'filters', 'labels' // Validation
+		'validate' // Validation
 	);
 
 	/**
@@ -968,6 +968,46 @@ class Kohana_ORM {
 	}
 
 	/**
+	 * Rule definitions for validation
+	 *
+	 * @return array
+	 */
+	public function rules()
+	{
+		return array();
+	}
+
+	/**
+	 * Filter definitions for validation
+	 *
+	 * @return array
+	 */
+	public function filters()
+	{
+		return array();
+	}
+
+	/**
+	 * Callback definitions for validation
+	 *
+	 * @return array
+	 */
+	public function callbacks()
+	{
+		return array();
+	}
+
+	/**
+	 * Label definitions for validation
+	 *
+	 * @return array
+	 */
+	public function labels()
+	{
+		return array();
+	}
+
+	/**
 	 * Initializes validation rules, callbacks, filters, and labels
 	 *
 	 * @return void
@@ -976,35 +1016,26 @@ class Kohana_ORM {
 	{
 		$this->_validate = Validate::factory($this->_object);
 
-		foreach ($this->_rules as $field => $rules)
+		foreach ($this->rules() as $field => $rules)
 		{
 			$this->_validate->rules($field, $rules);
 		}
 
-		foreach ($this->_filters as $field => $filters)
+		foreach ($this->filters() as $field => $filters)
 		{
 			$this->_validate->filters($field, $filters);
 		}
 
-		foreach ($this->_labels as $field => $label)
+		foreach ($this->labels() as $field => $label)
 		{
 			$this->_validate->label($field, $label);
 		}
 
-		foreach ($this->_callbacks as $field => $callbacks)
+		foreach ($this->callbacks() as $field => $callbacks)
 		{
 			foreach ($callbacks as $callback)
 			{
-				if (is_string($callback) AND method_exists($this, $callback))
-				{
-					// Callback method exists in current ORM model
-					$this->_validate->callback($field, array($this, $callback));
-				}
-				else
-				{
-					// Try global function
-					$this->_validate->callback($field, $callback);
-				}
+				$this->_validate->callback($field, $callback);
 			}
 		}
 	}
