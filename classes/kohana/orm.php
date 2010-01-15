@@ -402,7 +402,7 @@ class Kohana_ORM {
 		}
 		elseif (array_key_exists($column, $this->_object))
 		{
-			$this->_object[$column] = $this->_load_type($column, $value);
+			$this->_object[$column] = $value;
 
 			if (isset($this->_table_columns[$column]))
 			{
@@ -1198,12 +1198,6 @@ class Kohana_ORM {
 			{
 				if ( ! isset($this->_changed[$column]))
 				{
-					if (isset($this->_table_columns[$column]))
-					{
-						// The type of the value can be determined, convert the value
-						$value = $this->_load_type($column, $value);
-					}
-
 					$this->_object[$column] = $value;
 				}
 			}
@@ -1225,58 +1219,6 @@ class Kohana_ORM {
 		}
 
 		return $this;
-	}
-
-	/**
-	 * Loads a value according to the types defined by the column metadata.
-	 *
-	 * @param   string  column name
-	 * @param   mixed   value to load
-	 * @return  mixed
-	 */
-	protected function _load_type($column, $value)
-	{
-		$type = gettype($value);
-
-		if ($type == 'object' OR $type == 'array' OR ! isset($this->_table_columns[$column]))
-		{
-			// Return raw value if it's an object/array or not defined in column list
-			return $value;
-		}
-
-		$column = $this->_table_columns[$column];
-
-		if ($value === NULL AND $column['is_nullable'])
-		{
-			// Return NULL value
-			return NULL;
-		}
-
-		switch ($column['type'])
-		{
-			case 'int':
-				if ((float) $value > PHP_INT_MAX)
-				{
-					// This number cannot be represented by a PHP integer, so we convert it to a string
-					$value = (string) $value;
-				}
-				else
-				{
-					$value = (int) $value;
-				}
-			break;
-			case 'float':
-				$value = (float) $value;
-			break;
-			case 'bool':
-				$value = (bool) $value;
-			break;
-			case 'string':
-				$value = (string) $value;
-			break;
-		}
-
-		return $value;
 	}
 
 	/**
