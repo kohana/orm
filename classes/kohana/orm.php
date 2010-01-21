@@ -1022,13 +1022,10 @@ class Kohana_ORM {
 	public function create()
 	{
 		$data = array();
-		foreach ($this->_object as $column => $value)
+		foreach ($this->_changed as $column)
 		{
-			if ( ! isset($this->_ignored_columns[$column]))
-			{
-				// Generate list of column => values
-				$data[$column] = $value;
-			}
+			// Generate list of column => values
+			$data[$column] = $this->_object[$column];
 		}
 
 		if (is_array($this->_created_column))
