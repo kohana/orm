@@ -435,7 +435,7 @@ class Kohana_ORM {
 
 			$model->where($col, '=', $val)->find();
 
-			return $model;
+			return $this->_related[$column] = $model;
 		}
 		elseif (isset($this->_has_one[$column]))
 		{
@@ -447,7 +447,7 @@ class Kohana_ORM {
 
 			$model->where($col, '=', $val)->find();
 
-			return $model;
+			return $this->_related[$column] = $model;
 		}
 		elseif (isset($this->_has_many[$column]))
 		{
