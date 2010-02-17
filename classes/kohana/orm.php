@@ -165,7 +165,7 @@ class Kohana_ORM {
 	{
 		// Set the object name and plural name
 		$this->_object_name   = strtolower(substr(get_class($this), 6));
-		$this->_object_plural = inflector::plural($this->_object_name);
+		$this->_object_plural = Inflector::plural($this->_object_name);
 
 		if ( ! is_object($this->_db))
 		{
@@ -181,7 +181,7 @@ class Kohana_ORM {
 			if ($this->_table_names_plural === TRUE)
 			{
 				// Make the table name plural
-				$this->_table_name = inflector::plural($this->_table_name);
+				$this->_table_name = Inflector::plural($this->_table_name);
 			}
 		}
 
@@ -215,10 +215,10 @@ class Kohana_ORM {
 
 		foreach ($this->_has_many as $alias => $details)
 		{
-			$defaults['model']       = inflector::singular($alias);
+			$defaults['model']       = Inflector::singular($alias);
 			$defaults['foreign_key'] = $this->_object_name.$this->_foreign_key_suffix;
 			$defaults['through']     = NULL;
-			$defaults['far_key']     = inflector::singular($alias).$this->_foreign_key_suffix;
+			$defaults['far_key']     = Inflector::singular($alias).$this->_foreign_key_suffix;
 
 			$this->_has_many[$alias] = array_merge($defaults, $details);
 		}
@@ -380,7 +380,7 @@ class Kohana_ORM {
 	 */
 	public function __call($method, array $args)
 	{
-		if (in_array($method, self::$_properties))
+		if (in_array($method, ORM::$_properties))
 		{
 			if ($method === 'validate')
 			{
@@ -394,7 +394,7 @@ class Kohana_ORM {
 			// Return the property
 			return $this->{'_'.$method};
 		}
-		elseif (in_array($method, self::$_db_methods))
+		elseif (in_array($method, ORM::$_db_methods))
 		{
 			// Add pending database call which is executed after query type is determined
 			$this->_db_pending[] = array('name' => $method, 'args' => $args);
