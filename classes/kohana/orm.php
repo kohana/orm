@@ -974,7 +974,13 @@ class Kohana_ORM {
 			$this->_validate->filters($field, $filters);
 		}
 
-		foreach ($this->labels() as $field => $label)
+		 // Use column names by default for labels
+		$columns = array_keys($this->_table_columns);
+
+		// Merge user-defined labels
+		$labels = array_merge(array_combine($columns, $columns), $this->labels());
+
+		foreach ($labels as $field => $label)
 		{
 			$this->_validate->label($field, $label);
 		}
