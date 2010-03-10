@@ -1113,12 +1113,27 @@ class Kohana_ORM {
 	 */
 	public function count_all()
 	{
+		$selects = array();
+
+		foreach ($this->_db_pending as $key => $method)
+		{
+			if ($method['name'] == 'select')
+			{
+				// Ignore any selected columns for now
+				$selects[] = $method;
+				unset($this->_db_pending[$key]);
+			}
+		}
+
 		$this->_build(Database::SELECT);
 
 		$records = $this->_db_builder->from($this->_table_name)
 			->select(array('COUNT("*")', 'records_found'))
 			->execute($this->_db)
 			->get('records_found');
+
+		// Add back in selected columns
+		$this->_db_pending += $selects;
 
 		$this->reset();
 
