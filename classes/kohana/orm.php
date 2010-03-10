@@ -1349,9 +1349,10 @@ class Kohana_ORM {
 	{
 		if ($next AND $this->_db_reset)
 		{
-			$this->_db_pending = array();
-			$this->_db_applied = array();
-			$this->_db_builder = NULL;
+			$this->_db_pending   = array();
+			$this->_db_applied   = array();
+			$this->_db_builder   = NULL;
+			$this->_with_applied = array();
 		}
 
 		// Reset on the next call?
