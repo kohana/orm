@@ -58,9 +58,6 @@ class Kohana_ORM {
 	protected $_primary_key  = 'id';
 	protected $_primary_val  = 'name';
 
-	// Array of foreign key name overloads
-	protected $_foreign_key = array();
-
 	// Model configuration
 	protected $_table_names_plural = TRUE;
 	protected $_reload_on_wakeup   = TRUE;
