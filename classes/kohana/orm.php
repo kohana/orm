@@ -661,7 +661,7 @@ class Kohana_ORM {
 		}
 
 		// Join the related object into the result
-		$this->join(array($target->_table_name, $this->_db->table_prefix().$target_path), 'LEFT')->on($join_col1, '=', $join_col2);
+		$this->join(array($target->_table_name, $target_path), 'LEFT')->on($join_col1, '=', $join_col2);
 
 		return $this;
 	}
