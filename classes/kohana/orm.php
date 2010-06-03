@@ -1258,6 +1258,9 @@ class Kohana_ORM {
 			$this->_db_builder->limit(1);
 		}
 
+		// Select all columns by default
+		$this->_db_builder->select($this->_table_name.'.*');
+
 		if ( ! isset($this->_db_applied['order_by']) AND ! empty($this->_sorting))
 		{
 			foreach ($this->_sorting as $column => $direction)
