@@ -713,28 +713,7 @@ class Kohana_ORM {
 
 			$this->_db_applied[$name] = $name;
 
-			switch (count($args))
-			{
-				case 0:
-					$this->_db_builder->$name();
-				break;
-				case 1:
-					$this->_db_builder->$name($args[0]);
-				break;
-				case 2:
-					$this->_db_builder->$name($args[0], $args[1]);
-				break;
-				case 3:
-					$this->_db_builder->$name($args[0], $args[1], $args[2]);
-				break;
-				case 4:
-					$this->_db_builder->$name($args[0], $args[1], $args[2], $args[3]);
-				break;
-				default:
-					// Much slower...
-					call_user_func_array(array($this->_db_builder, $name), $args);
-				break;
-			}
+			call_user_func_array(array($this->_db_builder, $name), $args);
 		}
 
 		return $this;
