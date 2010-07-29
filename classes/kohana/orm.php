@@ -1104,7 +1104,7 @@ class Kohana_ORM {
 
 		$this->_build(Database::SELECT);
 
-		$records = $this->_db_builder->from($this->_table_name)
+		$records = (int) $this->_db_builder->from($this->_table_name)
 			->select(array('COUNT("*")', 'records_found'))
 			->execute($this->_db)
 			->get('records_found');
