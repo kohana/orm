@@ -641,6 +641,12 @@ class Kohana_ORM {
 		// Use the keys of the empty object to determine the columns
 		foreach (array_keys($target->_object) as $column)
 		{
+			// Skip over ignored columns
+			if(in_array($column, $target->_ignored_columns))
+			{
+				continue;
+			}
+
 			$name   = $target_path.'.'.$column;
 			$alias  = $target_path.':'.$column;
 
