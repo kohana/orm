@@ -642,16 +642,14 @@ class Kohana_ORM {
 		foreach (array_keys($target->_object) as $column)
 		{
 			// Skip over ignored columns
-			if(in_array($column, $target->_ignored_columns))
+			if( ! in_array($column, $target->_ignored_columns))
 			{
-				continue;
+				$name   = $target_path.'.'.$column;
+				$alias  = $target_path.':'.$column;
+
+				// Add the prefix so that load_result can determine the relationship
+				$this->select(array($name, $alias));
 			}
-
-			$name   = $target_path.'.'.$column;
-			$alias  = $target_path.':'.$column;
-
-			// Add the prefix so that load_result can determine the relationship
-			$this->select(array($name, $alias));
 		}
 
 		if (isset($parent->_belongs_to[$target_alias]))
