@@ -86,7 +86,6 @@ class Kohana_ORM {
 	protected $_object_plural;
 	protected $_table_name;
 	protected $_table_columns;
-	protected $_ignored_columns = array();
 
 	// Auto-update columns for creation and updates
 	protected $_updated_column = NULL;
@@ -187,12 +186,6 @@ class Kohana_ORM {
 		{
 			// Default sorting
 			$this->_sorting = array($this->_primary_key => 'ASC');
-		}
-
-		if ( ! empty($this->_ignored_columns))
-		{
-			// Optimize for performance
-			$this->_ignored_columns = array_combine($this->_ignored_columns, $this->_ignored_columns);
 		}
 
 		foreach ($this->_belongs_to as $alias => $details)
@@ -512,13 +505,11 @@ class Kohana_ORM {
 	 */
 	public function set($column, $value)
 	{
-		if (array_key_exists($column, $this->_ignored_columns))
+		if (array_key_exists($column, $this->_object))
 		{
-			// No processing for ignored columns, just store it
-			$this->_object[$column] = $value;
-		}
-		elseif (array_key_exists($column, $this->_object))
-		{
+			// Filter the data
+			$value = $this->run_filter($column, $value);
+
 			$this->_object[$column] = $value;
 
 			if (isset($this->_table_columns[$column]))
@@ -554,21 +545,39 @@ class Kohana_ORM {
 	 * for loading in post data, etc.
 	 *
 	 * @param   array  array of column => val
+	 * @param   array  array of keys to take from $values
 	 * @return  ORM
 	 */
-	public function values($values)
+	public function values(array $values, array $expected = NULL)
 	{
-		foreach ($values as $column => $value)
+		// Default to expecting everything except the primary key
+		if ($expected === NULL)
 		{
-			if (array_key_exists($column, $this->_object) OR array_key_exists($column, $this->_ignored_columns))
+			$expected = array_keys($this->_table_columns);
+
+			// Don't set the primary key by default
+			unset($values[$this->_primary_key]);
+		}
+
+		foreach ($expected as $key => $column)
+		{
+			if (is_string($key))
 			{
-				// Property of this model
-				$this->set($column, $value);
+				// isset() fails when the value is NULL (we want it to pass)
+				if ( ! array_key_exists($key, $values))
+					continue;
+
+				// Try to set values to a related model
+				$model = $this->{$key}->values($values[$key], $column);
 			}
-			elseif (isset($this->_belongs_to[$column]) OR isset($this->_has_one[$column]))
+			else
 			{
-				// Value is an array of properties for the related model
-				$this->_related[$column] = $value;
+				// isset() fails when the value is NULL (we want it to pass)
+				if ( ! array_key_exists($column, $values))
+					continue;
+
+				// Update the column, respects __set()
+				$this->$column = $values[$column];
 			}
 		}
 
@@ -900,6 +909,56 @@ class Kohana_ORM {
 	public function rules()
 	{
 		return array();
+	}
+
+	/**
+	 * Filters a value for a specific column
+	 *
+	 * @param  string the column name
+	 * @param  string the value to filter
+	 * @return string
+	 */
+	protected function run_filter($column, $value)
+	{
+		$filters = $this->filters();
+
+		// Get the filters for this column
+		$wildcards = ! empty($filters[TRUE]) ? $filters[TRUE] : array();
+
+		// Merge in the wildcards
+		$filters = ! empty($filters[$column]) ? array_merge($filters[$column], $wildcards) : $wildcards;
+
+		// Execute the filters
+		foreach ($filters as $filter => $params)
+		{
+			// $params needs to be array() if NULL was specified
+			$params = (array) $params;
+
+			// Add the field value to the parameters
+			array_unshift($params, $value);
+
+			if (strpos($filter, '::') === FALSE)
+			{
+				// Use a function call
+				$function = new ReflectionFunction($filter);
+
+				// Call $function($value, $param, ...) with Reflection
+				$value = $function->invokeArgs($params);
+			}
+			else
+			{
+				// Split the class and method of the rule
+				list($class, $method) = explode('::', $filter, 2);
+
+				// Use a static method call
+				$method = new ReflectionMethod($class, $method);
+
+				// Call $Class::$method($value, $param, ...) with Reflection
+				$value = $method->invokeArgs(NULL, $params);
+			}
+		}
+
+		return $value;
 	}
 
 	/**
