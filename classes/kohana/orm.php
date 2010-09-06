@@ -507,6 +507,9 @@ class Kohana_ORM {
 	{
 		if (array_key_exists($column, $this->_object))
 		{
+			// Filter the data
+			$value = $this->run_filter($column, $value);
+
 			$this->_object[$column] = $value;
 
 			if (isset($this->_table_columns[$column]))
@@ -906,6 +909,56 @@ class Kohana_ORM {
 	public function rules()
 	{
 		return array();
+	}
+
+	/**
+	 * Filters a value for a specific column
+	 *
+	 * @param  string the column name
+	 * @param  string the value to filter
+	 * @return string
+	 */
+	protected function run_filter($column, $value)
+	{
+		$filters = $this->filters();
+
+		// Get the filters for this column
+		$wildcards = ! empty($filters[TRUE]) ? $filters[TRUE] : array();
+
+		// Merge in the wildcards
+		$filters = ! empty($filters[$column]) ? array_merge($filters[$column], $wildcards) : $wildcards;
+
+		// Execute the filters
+		foreach ($filters as $filter => $params)
+		{
+			// $params needs to be array() if NULL was specified
+			$params = (array) $params;
+
+			// Add the field value to the parameters
+			array_unshift($params, $value);
+
+			if (strpos($filter, '::') === FALSE)
+			{
+				// Use a function call
+				$function = new ReflectionFunction($filter);
+
+				// Call $function($value, $param, ...) with Reflection
+				$value = $function->invokeArgs($params);
+			}
+			else
+			{
+				// Split the class and method of the rule
+				list($class, $method) = explode('::', $filter, 2);
+
+				// Use a static method call
+				$method = new ReflectionMethod($class, $method);
+
+				// Call $Class::$method($value, $param, ...) with Reflection
+				$value = $method->invokeArgs(NULL, $params);
+			}
+		}
+
+		return $value;
 	}
 
 	/**
