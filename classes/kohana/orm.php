@@ -1170,6 +1170,17 @@ class Kohana_ORM {
 	}
 
 	/**
+	 * Updates or Creates the record depending on loaded()
+	 *
+	 * @chainable
+	 * @return  ORM
+	 */
+	public function save()
+	{
+		return $this->loaded() ? $this->update() : $this->create();
+	}
+
+	/**
 	 * Deletes a single record or multiple records, ignoring relationships.
 	 *
 	 * @chainable
