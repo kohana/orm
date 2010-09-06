@@ -86,7 +86,6 @@ class Kohana_ORM {
 	protected $_object_plural;
 	protected $_table_name;
 	protected $_table_columns;
-	protected $_ignored_columns = array();
 
 	// Auto-update columns for creation and updates
 	protected $_updated_column = NULL;
@@ -187,12 +186,6 @@ class Kohana_ORM {
 		{
 			// Default sorting
 			$this->_sorting = array($this->_primary_key => 'ASC');
-		}
-
-		if ( ! empty($this->_ignored_columns))
-		{
-			// Optimize for performance
-			$this->_ignored_columns = array_combine($this->_ignored_columns, $this->_ignored_columns);
 		}
 
 		foreach ($this->_belongs_to as $alias => $details)
@@ -512,12 +505,7 @@ class Kohana_ORM {
 	 */
 	public function set($column, $value)
 	{
-		if (array_key_exists($column, $this->_ignored_columns))
-		{
-			// No processing for ignored columns, just store it
-			$this->_object[$column] = $value;
-		}
-		elseif (array_key_exists($column, $this->_object))
+		if (array_key_exists($column, $this->_object))
 		{
 			$this->_object[$column] = $value;
 
