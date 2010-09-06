@@ -554,21 +554,39 @@ class Kohana_ORM {
 	 * for loading in post data, etc.
 	 *
 	 * @param   array  array of column => val
+	 * @param   array  array of keys to take from $values
 	 * @return  ORM
 	 */
-	public function values($values)
+	public function values(array $values, array $expected = NULL)
 	{
-		foreach ($values as $column => $value)
+		// Default to expecting everything except the primary key
+		if ($expected === NULL)
 		{
-			if (array_key_exists($column, $this->_object) OR array_key_exists($column, $this->_ignored_columns))
+			$expected = array_keys($this->_table_columns);
+
+			// Don't set the primary key by default
+			unset($values[$this->_primary_key]);
+		}
+
+		foreach ($expected as $key => $column)
+		{
+			if (is_string($key))
 			{
-				// Property of this model
-				$this->set($column, $value);
+				// isset() fails when the value is NULL (we want it to pass)
+				if ( ! array_key_exists($key, $values))
+					continue;
+
+				// Try to set values to a related model
+				$model = $this->{$key}->values($values[$key], $column);
 			}
-			elseif (isset($this->_belongs_to[$column]) OR isset($this->_has_one[$column]))
+			else
 			{
-				// Value is an array of properties for the related model
-				$this->_related[$column] = $value;
+				// isset() fails when the value is NULL (we want it to pass)
+				if ( ! array_key_exists($column, $values))
+					continue;
+
+				// Update the column, respects __set()
+				$this->$column = $values[$column];
 			}
 		}
 
