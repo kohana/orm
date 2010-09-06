@@ -1061,8 +1061,14 @@ class Kohana_ORM {
 		}
 	}
 
-	public function create()
+	public function create(Validate $validate = NULL)
 	{
+		// Require model validation before saving
+		if ( ! $this->_valid)
+		{
+			$this->validate($validate);
+		}
+
 		$data = array();
 		foreach ($this->_changed as $column)
 		{
@@ -1106,12 +1112,18 @@ class Kohana_ORM {
 	 * @param   mixed  primary key of record to update, NULL for current record, TRUE for multiple records
 	 * @return  ORM
 	 */
-	public function update($id = NULL)
+	public function update($id = NULL, Validate $validate = NULL)
 	{
 		if (empty($this->_changed))
 		{
 			// Nothing to update
 			return $this;
+		}
+
+		// Require model validation before saving
+		if ( ! $this->_valid)
+		{
+			$this->validate($validate);
 		}
 
 		$data = array();
