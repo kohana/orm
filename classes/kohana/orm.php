@@ -358,6 +358,9 @@ class Kohana_ORM {
 	 */
 	public function __wakeup()
 	{
+		// Force the database object out of the serialized object (PHP bug with __sleep())
+		$this->_db = NULL;
+
 		// Initialize model
 		$this->_initialize();
 
