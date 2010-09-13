@@ -105,6 +105,7 @@ class Kohana_ORM {
 
 	// Database configuration
 	protected $_db         = NULL;
+	protected $_db_group   = NULL;
 	protected $_db_applied = array();
 	protected $_db_pending = array();
 	protected $_db_reset   = TRUE;
@@ -168,7 +169,7 @@ class Kohana_ORM {
 		if ( ! is_object($this->_db))
 		{
 			// Get database instance
-			$this->_db = Database::instance($this->_db);
+			$this->_db = Database::instance($this->_db_group);
 		}
 
 		if (empty($this->_table_name))
