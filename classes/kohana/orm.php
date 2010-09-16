@@ -18,9 +18,9 @@
 class Kohana_ORM {
 
 	// Current relationships
-	protected $_has_one                 = array();
-	protected $_belongs_to              = array();
-	protected $_has_many                = array();
+	protected $_has_one    = array();
+	protected $_belongs_to = array();
+	protected $_has_many   = array();
 
 	// Relationships that should always be joined
 	protected $_load_with = array();
@@ -58,15 +58,12 @@ class Kohana_ORM {
 	protected $_primary_key  = 'id';
 	protected $_primary_val  = 'name';
 
-	// Array of foreign key name overloads
-	protected $_foreign_key = array();
-
 	// Model configuration
 	protected $_table_names_plural = TRUE;
 	protected $_reload_on_wakeup   = TRUE;
 
 	// Database configuration
-	protected $_db         = 'default';
+	protected $_db         = NULL;
 	protected $_db_applied = array();
 	protected $_db_pending = array();
 	protected $_db_reset   = TRUE;
@@ -87,7 +84,8 @@ class Kohana_ORM {
 		'where', 'and_where', 'or_where', 'where_open', 'and_where_open', 'or_where_open', 'where_close',
 		'and_where_close', 'or_where_close', 'distinct', 'select', 'from', 'join', 'on', 'group_by',
 		'having', 'and_having', 'or_having', 'having_open', 'and_having_open', 'or_having_open',
-		'having_close', 'and_having_close', 'or_having_close', 'order_by', 'limit', 'offset'
+		'having_close', 'and_having_close', 'or_having_close', 'order_by', 'limit', 'offset', 'cached',
+		'count_last_query'
 	);
 
 	// Members that have access methods
@@ -125,12 +123,18 @@ class Kohana_ORM {
 	{
 		// Set the object name and plural name
 		$this->_object_name   = strtolower(substr(get_class($this), 6));
-		$this->_object_plural = inflector::plural($this->_object_name);
+		$this->_object_plural = Inflector::plural($this->_object_name);
 
 		if ( ! isset($this->_sorting))
 		{
 			// Default sorting
 			$this->_sorting = array($this->_primary_key => 'ASC');
+		}
+
+		if ( ! empty($this->_ignored_columns))
+		{
+			// Optimize for performance
+			$this->_ignored_columns = array_combine($this->_ignored_columns, $this->_ignored_columns);
 		}
 
 		// Initialize database
@@ -179,7 +183,16 @@ class Kohana_ORM {
 	 */
 	public function __isset($column)
 	{
-		return (isset($this->_object[$column]) OR isset($this->_related[$column]));
+		$this->_load();
+
+		return
+		(
+			isset($this->_object[$column]) OR
+			isset($this->_related[$column]) OR
+			isset($this->_has_one[$column]) OR
+			isset($this->_belongs_to[$column]) OR
+			isset($this->_has_many[$column])
+		);
 	}
 
 	/**
@@ -190,6 +203,8 @@ class Kohana_ORM {
 	 */
 	public function __unset($column)
 	{
+		$this->_load();
+
 		unset($this->_object[$column], $this->_changed[$column], $this->_related[$column]);
 	}
 
@@ -243,10 +258,16 @@ class Kohana_ORM {
 	 */
 	public function __call($method, array $args)
 	{
-		if (in_array($method, self::$_properties))
+		if (in_array($method, ORM::$_properties))
 		{
 			if ($method === 'loaded')
 			{
+				if ( ! isset($this->_object_name))
+				{
+					// Calling loaded method prior to the object being fully initialized
+					return FALSE;
+				}
+
 				$this->_load();
 			}
 			elseif ($method === 'validate')
@@ -261,7 +282,7 @@ class Kohana_ORM {
 			// Return the property
 			return $this->{'_'.$method};
 		}
-		elseif (in_array($method, self::$_db_methods))
+		elseif (in_array($method, ORM::$_db_methods))
 		{
 			// Add pending database call which is executed after query type is determined
 			$this->_db_pending[] = array('name' => $method, 'args' => $args);
@@ -306,7 +327,7 @@ class Kohana_ORM {
 
 			$model->where($col, '=', $val)->find();
 
-			return $model;
+			return $this->_related[$column] = $model;
 		}
 		elseif (isset($this->_has_one[$column]))
 		{
@@ -318,7 +339,7 @@ class Kohana_ORM {
 
 			$model->where($col, '=', $val)->find();
 
-			return $model;
+			return $this->_related[$column] = $model;
 		}
 		elseif (isset($this->_has_many[$column]))
 		{
@@ -372,14 +393,16 @@ class Kohana_ORM {
 			return;
 		}
 
-		if (array_key_exists($column, $this->_object))
+		if (array_key_exists($column, $this->_ignored_columns))
 		{
-			// Store previous value to see if there is a change
-			$previous = $this->_object[$column];
+			// No processing for ignored columns, just store it
+			$this->_object[$column] = $value;
+		}
+		elseif (array_key_exists($column, $this->_object))
+		{
+			$this->_object[$column] = $value;
 
-			$this->_object[$column] = $this->_load_type($column, $value);
-
-			if (isset($this->_table_columns[$column]) AND $this->_object[$column] !== $previous)
+			if (isset($this->_table_columns[$column]))
 			{
 				// Data has changed
 				$this->_changed[$column] = $column;
@@ -394,7 +417,9 @@ class Kohana_ORM {
 			$this->_related[$column] = $value;
 
 			// Update the foreign key of this model
-			$this->_object[$this->_belongs_to[$column]['foreign_key']] = $value->_primary_key;
+			$this->_object[$this->_belongs_to[$column]['foreign_key']] = $value->pk();
+
+			$this->_changed[$column] = $this->_belongs_to[$column]['foreign_key'];
 		}
 		else
 		{
@@ -414,7 +439,7 @@ class Kohana_ORM {
 	{
 		foreach ($values as $key => $value)
 		{
-			if (array_key_exists($key, $this->_object))
+			if (array_key_exists($key, $this->_object) OR array_key_exists($key, $this->_ignored_columns))
 			{
 				// Property of this model
 				$this->__set($key, $value);
@@ -451,7 +476,7 @@ class Kohana_ORM {
 			if ($this->_table_names_plural === TRUE)
 			{
 				// Make the table name plural
-				$this->_table_name = inflector::plural($this->_table_name);
+				$this->_table_name = Inflector::plural($this->_table_name);
 			}
 		}
 
@@ -473,10 +498,10 @@ class Kohana_ORM {
 
 		foreach ($this->_has_many as $alias => $details)
 		{
-			$defaults['model']       = inflector::singular($alias);
+			$defaults['model']       = Inflector::singular($alias);
 			$defaults['foreign_key'] = $this->_object_name.$this->_foreign_key_suffix;
 			$defaults['through']     = NULL;
-			$defaults['far_key']     = inflector::singular($alias).$this->_foreign_key_suffix;
+			$defaults['far_key']     = Inflector::singular($alias).$this->_foreign_key_suffix;
 
 			$this->_has_many[$alias] = array_merge($defaults, $details);
 		}
@@ -504,7 +529,13 @@ class Kohana_ORM {
 			$this->_validate->filters($field, $filters);
 		}
 
-		foreach ($this->_labels as $field => $label)
+		// Use column names by default for labels
+		$columns = array_keys($this->_table_columns);
+
+		// Merge user-defined labels
+		$labels = array_merge(array_combine($columns, $columns), $this->_labels);
+
+		foreach ($labels as $field => $label)
 		{
 			$this->_validate->label($field, $label);
 		}
@@ -610,11 +641,15 @@ class Kohana_ORM {
 		// Use the keys of the empty object to determine the columns
 		foreach (array_keys($target->_object) as $column)
 		{
-			$name   = $target_path.'.'.$column;
-			$alias  = $target_path.':'.$column;
+			// Skip over ignored columns
+			if( ! in_array($column, $target->_ignored_columns))
+			{
+				$name   = $target_path.'.'.$column;
+				$alias  = $target_path.':'.$column;
 
-			// Add the prefix so that load_result can determine the relationship
-			$this->select(array($name, $alias));
+				// Add the prefix so that load_result can determine the relationship
+				$this->select(array($name, $alias));
+			}
 		}
 
 		if (isset($parent->_belongs_to[$target_alias]))
@@ -631,7 +666,7 @@ class Kohana_ORM {
 		}
 
 		// Join the related object into the result
-		$this->join(array($target->_table_name, $target_path))->on($join_col1, '=', $join_col2);
+		$this->join(array($target->_table_name, $target_path), 'LEFT')->on($join_col1, '=', $join_col2);
 
 		return $this;
 	}
@@ -665,42 +700,22 @@ class Kohana_ORM {
 
 			$this->_db_applied[$name] = $name;
 
-			switch (count($args))
-			{
-				case 0:
-					$this->_db_builder->$name();
-				break;
-				case 1:
-					$this->_db_builder->$name($args[0]);
-				break;
-				case 2:
-					$this->_db_builder->$name($args[0], $args[1]);
-				break;
-				case 3:
-					$this->_db_builder->$name($args[0], $args[1], $args[2]);
-				break;
-				case 4:
-					$this->_db_builder->$name($args[0], $args[1], $args[2], $args[3]);
-				break;
-				default:
-					// Here comes the snail...
-					call_user_func_array(array($this->_db_builder, $name), $args);
-				break;
-			}
+			call_user_func_array(array($this->_db_builder, $name), $args);
 		}
 
 		return $this;
 	}
 
 	/**
-	 * Loads the given model only if it hasn't been loaded yet and a primary key is specified
+	 * Loads the given model
 	 *
 	 * @return  ORM
 	 */
 	protected function _load()
 	{
-		if ( ! $this->_loaded AND ! $this->empty_pk())
+		if ( ! $this->_loaded AND ! $this->empty_pk() AND ! isset($this->_changed[$this->_primary_key]))
 		{
+			// Only load if it hasn't been loaded, and a primary key is specified and hasn't been modified
 			return $this->find($this->pk());
 		}
 	}
@@ -714,6 +729,15 @@ class Kohana_ORM {
 	 */
 	public function find($id = NULL)
 	{
+		if ( ! empty($this->_load_with))
+		{
+			foreach ($this->_load_with as $alias)
+			{
+				// Bind relationship
+				$this->with($alias);
+			}
+		}
+
 		$this->_build(Database::SELECT);
 
 		if ($id !== NULL)
@@ -733,6 +757,15 @@ class Kohana_ORM {
 	 */
 	public function find_all()
 	{
+		if ( ! empty($this->_load_with))
+		{
+			foreach ($this->_load_with as $alias)
+			{
+				// Bind relationship
+				$this->with($alias);
+			}
+		}
+
 		$this->_build(Database::SELECT);
 
 		return $this->_load_result(TRUE);
@@ -756,7 +789,17 @@ class Kohana_ORM {
 			$this->_validate->exchangeArray($this->_object);
 		}
 
-		return $this->_validate->check();
+		if ($this->_validate->check())
+		{
+			// Fields may have been modified by filters
+			$this->_object = array_merge($this->_object, $this->_validate->getArrayCopy());
+
+			return TRUE;
+		}
+		else
+		{
+			return FALSE;
+		}
 	}
 
 	/**
@@ -773,11 +816,8 @@ class Kohana_ORM {
 		$data = array();
 		foreach ($this->_changed as $column)
 		{
-			if ( ! in_array($column, $this->_ignored_columns))
-			{
-				// Compile changed data if it's not an ignored column
-				$data[$column] = $this->_object[$column];
-			}
+			// Compile changed data
+			$data[$column] = $this->_object[$column];
 		}
 
 		if ( ! $this->empty_pk() AND ! isset($this->_changed[$this->_primary_key]))
@@ -856,11 +896,8 @@ class Kohana_ORM {
 		$data = array();
 		foreach ($this->_changed as $column)
 		{
-			if ( ! in_array($column, $this->_ignored_columns))
-			{
-				// Compile changed data omitting ignored columns
-				$data[$column] = $this->_object[$column];
-			}
+			// Compile changed data omitting ignored columns
+			$data[$column] = $this->_object[$column];
 		}
 
 		if (is_array($this->_updated_column))
@@ -929,7 +966,7 @@ class Kohana_ORM {
 	public function clear()
 	{
 		// Create an array with all the columns set to NULL
-		$values = array_combine($this->_table_columns, array_fill(0, count($this->_table_columns), NULL));
+		$values = array_combine(array_keys($this->_table_columns), array_fill(0, count($this->_table_columns), NULL));
 
 		// Replace the object and reset the object status
 		$this->_object = $this->_changed = $this->_related = array();
@@ -937,7 +974,7 @@ class Kohana_ORM {
 		// Replace the current object with an empty one
 		$this->_load_values($values);
 
-		$this->_reset();
+		$this->reset();
 
 		return $this;
 	}
@@ -976,9 +1013,8 @@ class Kohana_ORM {
 			}
 			else
 			{
-				// List columns and mirror for performance
-				$this->_table_columns = $this->list_columns();
-				$this->_table_columns = array_combine($this->_table_columns, $this->_table_columns);
+				// Grab column information from database
+				$this->_table_columns = $this->list_columns(TRUE);
 
 				// Load column cache
 				ORM::$_column_cache[$this->_object_name] = $this->_table_columns;
@@ -1002,7 +1038,7 @@ class Kohana_ORM {
 			->from($this->_has_many[$alias]['through'])
 			->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk())
 			->where($this->_has_many[$alias]['far_key'], '=', $model->pk())
-			->execute()
+			->execute($this->_db)
 			->get('records_found');
 	}
 
@@ -1011,14 +1047,25 @@ class Kohana_ORM {
 	 *
 	 * @param   string   alias of the has_many "through" relationship
 	 * @param   ORM      related ORM model
+	 * @param   array    additional data to store in "through"/pivot table
 	 * @return  ORM
 	 */
-	public function add($alias, ORM $model)
+	public function add($alias, ORM $model, $data = NULL)
 	{
+		$columns = array($this->_has_many[$alias]['foreign_key'], $this->_has_many[$alias]['far_key']);
+		$values  = array($this->pk(), $model->pk());
+
+		if ($data !== NULL)
+		{
+			// Additional data stored in pivot table
+			$columns = array_merge($columns, array_keys($data));
+			$values  = array_merge($values, array_values($data));
+		}
+
 		DB::insert($this->_has_many[$alias]['through'])
-			->columns(array($this->_has_many[$alias]['foreign_key'], $this->_has_many[$alias]['far_key']))
-			->values(array($this->pk(), $model->pk()))
-			->execute();
+			->columns($columns)
+			->values($values)
+			->execute($this->_db);
 
 		return $this;
 	}
@@ -1035,7 +1082,7 @@ class Kohana_ORM {
 		DB::delete($this->_has_many[$alias]['through'])
 			->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk())
 			->where($this->_has_many[$alias]['far_key'], '=', $model->pk())
-			->execute();
+			->execute($this->_db);
 
 		return $this;
 	}
@@ -1047,14 +1094,29 @@ class Kohana_ORM {
 	 */
 	public function count_all()
 	{
+		$selects = array();
+
+		foreach ($this->_db_pending as $key => $method)
+		{
+			if ($method['name'] == 'select')
+			{
+				// Ignore any selected columns for now
+				$selects[] = $method;
+				unset($this->_db_pending[$key]);
+			}
+		}
+
 		$this->_build(Database::SELECT);
 
-		$records = $this->_db_builder->from($this->_table_name)
+		$records = (int) $this->_db_builder->from($this->_table_name)
 			->select(array('COUNT("*")', 'records_found'))
-			->execute()
+			->execute($this->_db)
 			->get('records_found');
 
-		$this->_reset();
+		// Add back in selected columns
+		$this->_db_pending += $selects;
+
+		$this->reset();
 
 		// Return the total number of records in a table
 		return $records;
@@ -1138,12 +1200,6 @@ class Kohana_ORM {
 			{
 				if ( ! isset($this->_changed[$column]))
 				{
-					if (isset($this->_table_columns[$column]))
-					{
-						// The type of the value can be determined, convert the value
-						$value = $this->_load_type($column, $value);
-					}
-
 					$this->_object[$column] = $value;
 				}
 			}
@@ -1168,63 +1224,6 @@ class Kohana_ORM {
 	}
 
 	/**
-	 * Loads a value according to the types defined by the column metadata.
-	 *
-	 * @param   string  column name
-	 * @param   mixed   value to load
-	 * @return  mixed
-	 */
-	protected function _load_type($column, $value)
-	{
-		$type = gettype($value);
-		if ($type == 'object' OR $type == 'array' OR ! isset($this->_table_columns[$column]))
-			return $value;
-
-		// Load column data
-		$column = $this->_table_columns[$column];
-
-		if ($value === NULL AND ! empty($column['null']))
-			return $value;
-
-		if ( ! empty($column['binary']) AND ! empty($column['exact']) AND (int) $column['length'] === 1)
-		{
-			// Use boolean for BINARY(1) fields
-			$column['type'] = 'boolean';
-		}
-
-		switch ($column['type'])
-		{
-			case 'int':
-				if ($value === '' AND ! empty($column['null']))
-				{
-					// Forms will only submit strings, so empty integer values must be null
-					$value = NULL;
-				}
-				elseif ((float) $value > PHP_INT_MAX)
-				{
-					// This number cannot be represented by a PHP integer, so we convert it to a string
-					$value = (string) $value;
-				}
-				else
-				{
-					$value = (int) $value;
-				}
-			break;
-			case 'float':
-				$value = (float) $value;
-			break;
-			case 'boolean':
-				$value = (bool) $value;
-			break;
-			case 'string':
-				$value = (string) $value;
-			break;
-		}
-
-		return $value;
-	}
-
-	/**
 	 * Loads a database result, either as a new object for this model, or as
 	 * an iterator for multiple rows.
 	 *
@@ -1246,27 +1245,8 @@ class Kohana_ORM {
 		// Select all columns by default
 		$this->_db_builder->select($this->_table_name.'.*');
 
-		if ( ! empty($this->_load_with))
-		{
-			foreach ($this->_load_with as $alias => $object)
-			{
-				// Join each object into the results
-				if (is_string($alias))
-				{
-					// Use alias
-					$this->with($alias);
-				}
-				else
-				{
-					// Use object as name
-					$this->with($object);
-				}
-			}
-		}
-
 		if ( ! isset($this->_db_applied['order_by']) AND ! empty($this->_sorting))
 		{
-			$sorting = array();
 			foreach ($this->_sorting as $column => $direction)
 			{
 				if (strpos($column, '.') === FALSE)
@@ -1275,7 +1255,6 @@ class Kohana_ORM {
 					$column = $this->_table_name.'.'.$column;
 				}
 
-				$sorting[$column] = $direction;
 				$this->_db_builder->order_by($column, $direction);
 			}
 		}
@@ -1285,7 +1264,7 @@ class Kohana_ORM {
 			// Return database iterator casting to this object type
 			$result = $this->_db_builder->as_object(get_class($this))->execute($this->_db);
 
-			$this->_reset();
+			$this->reset();
 
 			return $result;
 		}
@@ -1294,7 +1273,7 @@ class Kohana_ORM {
 			// Load the result as an associative array
 			$result = $this->_db_builder->as_assoc()->execute($this->_db);
 
-			$this->_reset();
+			$this->reset();
 
 			if ($result->count() === 1)
 			{
@@ -1347,13 +1326,14 @@ class Kohana_ORM {
 	 *
 	 * @param  bool  Pass FALSE to avoid resetting on the next call
 	 */
-	protected function _reset($next = TRUE)
+	public function reset($next = TRUE)
 	{
 		if ($next AND $this->_db_reset)
 		{
-			$this->_db_pending = array();
-			$this->_db_applied = array();
-			$this->_db_builder = NULL;
+			$this->_db_pending   = array();
+			$this->_db_applied   = array();
+			$this->_db_builder   = NULL;
+			$this->_with_applied = array();
 		}
 
 		// Reset on the next call?
