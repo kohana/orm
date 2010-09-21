@@ -10,7 +10,8 @@
  *
  * $Id: ORM.php 4427 2009-06-19 23:31:36Z jheathco $
  *
- * @package    ORM
+ * @package    Kohana/ORM
+ * @category   Base
  * @author     Kohana Team
  * @copyright  (c) 2007-2009 Kohana Team
  * @license    http://kohanaphp.com/license.html
