@@ -8,14 +8,12 @@
  * [ref-orm]: http://wikipedia.org/wiki/Object-relational_mapping
  * [ref-act]: http://wikipedia.org/wiki/Active_record
  *
- * $Id: ORM.php 4427 2009-06-19 23:31:36Z jheathco $
- *
  * @package    ORM
  * @author     Kohana Team
  * @copyright  (c) 2007-2009 Kohana Team
  * @license    http://kohanaphp.com/license.html
  */
-class Kohana_ORM {
+class Kohana_ORM implements serializable {
 
 	// Stores column information for ORM models
 	protected static $_column_cache = array();
@@ -27,7 +25,7 @@ class Kohana_ORM {
 		'and_where_close', 'or_where_close', 'distinct', 'select', 'from', 'join', 'on', 'group_by',
 		'having', 'and_having', 'or_having', 'having_open', 'and_having_open', 'or_having_open',
 		'having_close', 'and_having_close', 'or_having_close', 'order_by', 'limit', 'offset', 'cached',
-		'count_last_query'		
+		'count_last_query'
 	);
 
 	// Members that have access methods
@@ -337,10 +335,15 @@ class Kohana_ORM {
 	 *
 	 * @return  array
 	 */
-	public function __sleep()
+	public function serialize()
 	{
 		// Store only information about the object
-		return array('_object_name', '_object', '_changed', '_loaded', '_saved', '_sorting');
+		foreach (array('_primary_key_value', '_object', '_changed', '_loaded', '_saved', '_sorting') as $var)
+		{
+			$data[$var] = $this->{$var};
+		}
+
+		return serialize($data);
 	}
 
 	/**
@@ -348,10 +351,15 @@ class Kohana_ORM {
 	 *
 	 * @return  void
 	 */
-	public function __wakeup()
+	public function unserialize($data)
 	{
 		// Initialize model
 		$this->_initialize();
+
+		foreach(unserialize($data) as $name => $var)
+		{
+			$this->{$name} = $var;
+		}
 
 		if ($this->_reload_on_wakeup === TRUE)
 		{
