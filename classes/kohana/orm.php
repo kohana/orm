@@ -629,7 +629,7 @@ class Kohana_ORM {
 		}
 		else
 		{
-			if( ! isset($this->_with_applied[$parent_path]))
+			if ( ! isset($this->_with_applied[$parent_path]))
 			{
 				// If the parent path hasn't been joined yet, do it first (otherwise LEFT JOINs fail)
 				$this->with($parent_path);
