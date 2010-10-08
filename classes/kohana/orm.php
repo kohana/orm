@@ -613,6 +613,7 @@ class Kohana_ORM {
 				// Can't find related object
 				return $this;
 			}
+			$target_database = $target->_db->get_name();
 		}
 
 		// Target alias is at the end
@@ -667,7 +668,7 @@ class Kohana_ORM {
 		}
 
 		// Join the related object into the result
-		$this->join(array($target->_table_name, $target_path), 'LEFT')->on($join_col1, '=', $join_col2);
+		this->join(array($target_database.'.'.$target->_table_name, $target_path), 'LEFT')->on($join_col1, '=', $join_col2);
 
 		return $this;
 	}
