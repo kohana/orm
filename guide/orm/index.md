@@ -40,7 +40,7 @@ To use ORM you can create a file in `application/classes/controller/member.php` 
 
 ## Complete example
 
-### SQL schema:
+### SQL schema
 
 	CREATE TABLE IF NOT EXISTS `members` (
 	  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -51,7 +51,7 @@ To use ORM you can create a file in `application/classes/controller/member.php` 
 	  PRIMARY KEY (`id`)
 	) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
 
-### Model:
+### Model
 	
 	<?php defined('SYSPATH') or die('No direct access allowed.');
 
