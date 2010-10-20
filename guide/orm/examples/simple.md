@@ -1,29 +1,8 @@
-# ORM
+# Simple example
 
-Kohana 3.X includes a powerful Object Relational Mapping (ORM) module that uses the active record pattern and database introspection to determine a model's column information. ORM is integrated tightly with the [Validate] library.
+This is a simple example of a single ORM model, that has no relationships, but uses validation on the fields. 
 
-The ORM allows for manipulation and control of data within a database as though it was a PHP object. Once you define the relationships ORM allows you to pull data from your database, manipulate the data in any way you like and then save the result back to the database without the use of SQL. By creating relationships between models that follow convention over configuration, much of the repetition of writing queries to create, read, update and delete information from the database can be reduced or entirely removed. All of the relationships can be handled automatically by the ORM library and you can access related data as standard object properties.
-
-ORM is included with the Kohana 3.X install but needs to be enabled before you can use it. In your `application/bootstrap.php` file modify the call to Kohana::modules and include the ORM modules.
-
-## Getting started
-
-Before we use ORM, we must enable the modules required
-
-	Kohana::modules(array(
-		...
-		'database' => MODPATH.'database',
-		'orm' => MODPATH.'orm',
-		...
-	));
-
-[!!] The database module is requried for the ORM module to work. Of course the database module has to be configured to use a existing database.
-
-You can now created your [models](models) and [use ORM](using).
-
-## Complete example
-
-### SQL schema
+## SQL schema
 
 	CREATE TABLE IF NOT EXISTS `members` (
 	  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -34,11 +13,11 @@ You can now created your [models](models) and [use ORM](using).
 	  PRIMARY KEY (`id`)
 	) ENGINE=InnoDB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;
 
-### Model
+## Model
 	
 	<?php defined('SYSPATH') or die('No direct access allowed.');
 
-	class Model_Auth_User extends ORM {
+	class Model_Member extends ORM {
 
 		protected $_rules = array(
 			'username' => array(
@@ -68,7 +47,7 @@ You can now created your [models](models) and [use ORM](using).
 		);
 	}
 
-[!!] As you can see there are arrays containing values for like min_length, max_length, regex. They are there to connect ORM with the [Validate] library.
+[!!] The `$_rules` array will be passed to a [Validate] object and tested when you call `check()`. 
 
 [!!] Please notice that defining the primary key "id" in the model is not necessary. Also the table name in the database is plural and the model name is singular.
 
