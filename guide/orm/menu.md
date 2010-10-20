@@ -4,3 +4,4 @@
 - [Relationships](relationships)
 - [Validation](validation)
 - [Examples](examples)
+    - [Simple](examples/simple)
