@@ -67,4 +67,12 @@ And if you want to save the changes you just made back to the database, just run
 ## Deleting
 
 
+To delete an object, you can call the [ORM::delete] function on a loaded ORM model, or pass an id to the delete function of a unloaded model.
+
+	$user = ORM::factory('user')->find(20);
+	$user->delete();
+
+or
+
+	ORM::factory('user')->delete(20);
 
