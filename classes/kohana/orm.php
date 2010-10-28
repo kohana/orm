@@ -27,7 +27,7 @@ class Kohana_ORM {
 		'and_where_close', 'or_where_close', 'distinct', 'select', 'from', 'join', 'on', 'group_by',
 		'having', 'and_having', 'or_having', 'having_open', 'and_having_open', 'or_having_open',
 		'having_close', 'and_having_close', 'or_having_close', 'order_by', 'limit', 'offset', 'cached',
-		'count_last_query'		
+		'count_last_query'
 	);
 
 	// Members that have access methods
@@ -296,7 +296,11 @@ class Kohana_ORM {
 		// Replace the object and reset the object status
 		$this->_object = $this->_changed = $this->_related = array();
 
-		return $this->find($primary_key);
+		// Only reload the object if we have one to reload
+		if ($this->_loaded)
+			return $this->find($primary_key);
+		else
+			return $this->clear();
 	}
 
 	/**
