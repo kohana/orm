@@ -1000,7 +1000,6 @@ class Kohana_ORM {
 			return $this->clear();
 	}
 
-
 	/**
 	 * Reload column definitions.
 	 *
