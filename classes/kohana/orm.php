@@ -993,8 +993,13 @@ class Kohana_ORM {
 		// Replace the object and reset the object status
 		$this->_object = $this->_changed = $this->_related = array();
 
-		return $this->find($primary_key);
+		// Only reload the object if we have one to reload
+		if ($this->_loaded)
+			return $this->find($primary_key);
+		else
+			return $this->clear();
 	}
+
 
 	/**
 	 * Reload column definitions.
