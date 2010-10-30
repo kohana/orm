@@ -36,7 +36,6 @@ class Kohana_ORM {
 		'object_name', 'object_plural', 'loaded', 'saved', // Object
 		'primary_key', 'primary_val', 'table_name', 'table_columns', // Table
 		'has_one', 'belongs_to', 'has_many', 'has_many_through', 'load_with', // Relationships
-		'validate' // Validation
 	);
 
 	/**
@@ -64,16 +63,17 @@ class Kohana_ORM {
 	protected $_load_with = array();
 
 	// Validation members
-	protected $_validate  = NULL;
 	protected $_rules     = array();
 	protected $_callbacks = array();
-	protected $_filters   = array();
 	protected $_labels    = array();
+
+	protected $_filters   = array();
 
 	// Current object
 	protected $_object  = array();
 	protected $_changed = array();
 	protected $_related = array();
+	protected $_valid   = FALSE;
 	protected $_loaded  = FALSE;
 	protected $_saved   = FALSE;
 	protected $_sorting;
@@ -373,15 +373,6 @@ class Kohana_ORM {
 	{
 		if (in_array($method, ORM::$_properties))
 		{
-			if ($method === 'validate')
-			{
-				if ( ! isset($this->_validate))
-				{
-					// Initialize the validation object
-					$this->_validate();
-				}
-			}
-
 			// Return the property
 			return $this->{'_'.$method};
 		}
@@ -517,8 +508,8 @@ class Kohana_ORM {
 				// Data has changed
 				$this->_changed[$column] = $column;
 
-				// Object is no longer saved
-				$this->_saved = FALSE;
+				// Object is no longer saved or valid
+				$this->_saved = $this->_valid = FALSE;
 			}
 		}
 		elseif (isset($this->_belongs_to[$column]))
@@ -857,16 +848,16 @@ class Kohana_ORM {
 		{
 			if ($values[$this->_primary_key] !== NULL)
 			{
-				// Flag as loaded and saved
-				$this->_loaded = $this->_saved = TRUE;
+				// Flag as loaded, saved, and valid
+				$this->_loaded = $this->_saved = $this->_valid = TRUE;
 
 				// Store primary key
 				$this->_primary_key_value = $values[$this->_primary_key];
 			}
 			else
 			{
-				// Not loaded or saved
-				$this->_loaded = $this->_saved = FALSE;
+				// Not loaded, saved, or valid
+				$this->_loaded = $this->_saved = $this->_valid = FALSE;
 			}
 		}
 
@@ -992,22 +983,21 @@ class Kohana_ORM {
 	}
 
 	/**
-	 * Initializes validation rules, callbacks, filters, and labels
+	 * Validates the current model's data
 	 *
-	 * @return void
+	 * @return  void
 	 */
-	protected function _validate()
+	public function validate(Validate $extra_validation = NULL)
 	{
-		$this->_validate = Validate::factory($this->_object);
+		// Determine if any external validation failed
+		$extra_errors = $extra_validation AND ! $extra_validation->check();
+
+		// Build the validation object with its rules and callbacks
+		$array = Validate::factory($this->_object);
 
 		foreach ($this->rules() as $field => $rules)
 		{
-			$this->_validate->rules($field, $rules);
-		}
-
-		foreach ($this->filters() as $field => $filters)
-		{
-			$this->_validate->filters($field, $filters);
+			$array->rules($field, $rules);
 		}
 
 		 // Use column names by default for labels
@@ -1018,47 +1008,30 @@ class Kohana_ORM {
 
 		foreach ($labels as $field => $label)
 		{
-			$this->_validate->label($field, $label);
+			$array->label($field, $label);
 		}
 
 		foreach ($this->callbacks() as $field => $callbacks)
 		{
 			foreach ($callbacks as $callback)
 			{
-				$this->_validate->callback($field, $callback);
+				$array->callback($field, $callback);
 			}
 		}
-	}
 
-	/**
-	 * Validates the current model's data
-	 *
-	 * @return  boolean
-	 */
-	public function check()
-	{
-		if ( ! isset($this->_validate))
+		if (($this->_valid = $array->check()) === FALSE OR $extra_errors)
 		{
-			// Initialize the validation object
-			$this->_validate();
-		}
-		else
-		{
-			// Validation object has been created, just exchange the data array
-			$this->_validate->exchangeArray($this->_object);
+			$exception = new ORM_Validation_Exception($this->_object_name, $array);
+
+			if ($extra_errors)
+			{
+				// Merge any possible errors from the external object
+				$exception->add_object($extra_validation, '_external');
+			}
+			throw $exception;
 		}
 
-		if ($this->_validate->check())
-		{
-			// Fields may have been modified by filters
-			$this->_object = array_merge($this->_object, $this->_validate->getArrayCopy());
-
-			return TRUE;
-		}
-		else
-		{
-			return FALSE;
-		}
+		return $this;
 	}
 
 	public function create(Validate $validate = NULL)
