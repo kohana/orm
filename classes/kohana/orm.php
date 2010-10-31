@@ -1035,7 +1035,7 @@ class Kohana_ORM {
 	public function check(Validate $extra_validation = NULL)
 	{
 		// Determine if any external validation failed
-		$extra_errors = $extra_validation AND ! $extra_validation->check();
+		$extra_errors = ($extra_validation AND ! $extra_validation->check());
 
 		// Always build a new validation object
 		$this->_validate();
@@ -1049,7 +1049,7 @@ class Kohana_ORM {
 			if ($extra_errors)
 			{
 				// Merge any possible errors from the external object
-				$exception->add_object($extra_validation, '_external');
+				$exception->add_object('_external', $extra_validation);
 			}
 			throw $exception;
 		}
