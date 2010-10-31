@@ -23,7 +23,7 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 		parent::__construct($message, $values, $code);
 	}
 
-	public function add_object(Validate $object, $alias, $has_many = FALSE)
+	public function add_object($alias, Validate $object, $has_many = FALSE)
 	{
 		if ($has_many)
 		{
@@ -47,7 +47,7 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 	 * @param Bool   $has_many
 	 * @return object
 	 */
-	public function merge(ORM_Validation_Exception $object, $alias, $has_many = FALSE)
+	public function merge($alias, ORM_Validation_Exception $object, $has_many = FALSE)
 	{
 		if ($has_many)
 		{
