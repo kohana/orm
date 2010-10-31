@@ -1160,9 +1160,9 @@ class Kohana_ORM {
 	 * @chainable
 	 * @return  ORM
 	 */
-	public function save()
+	public function save(Validate $validate = NULL)
 	{
-		return $this->loaded() ? $this->update() : $this->create();
+		return $this->loaded() ? $this->update(NULL, $validate) : $this->create($validate);
 	}
 
 	/**
