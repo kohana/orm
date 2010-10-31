@@ -36,6 +36,7 @@ class Kohana_ORM {
 		'object_name', 'object_plural', 'loaded', 'saved', // Object
 		'primary_key', 'primary_val', 'table_name', 'table_columns', // Table
 		'has_one', 'belongs_to', 'has_many', 'has_many_through', 'load_with', // Relationships
+		'validate', // Validation
 	);
 
 	/**
@@ -63,6 +64,7 @@ class Kohana_ORM {
 	protected $_load_with = array();
 
 	// Validation members
+	protected $_validate  = NULL;
 	protected $_rules     = array();
 	protected $_callbacks = array();
 	protected $_labels    = array();
@@ -221,6 +223,40 @@ class Kohana_ORM {
 		$this->clear();
 	}
 
+	/**
+	 * Initializes validation rules, callbacks, and labels
+	 *
+	 * @return void
+	 */
+	protected function _validate()
+	{
+		// Build the validation object with its rules and callbacks
+		$this->_validate = Validate::factory($this->_object);
+
+		foreach ($this->rules() as $field => $rules)
+		{
+			$this->_validate->rules($field, $rules);
+		}
+
+		 // Use column names by default for labels
+		$columns = array_keys($this->_table_columns);
+
+		// Merge user-defined labels
+		$labels = array_merge(array_combine($columns, $columns), $this->labels());
+
+		foreach ($labels as $field => $label)
+		{
+			$this->_validate->label($field, $label);
+		}
+
+		foreach ($this->callbacks() as $field => $callbacks)
+		{
+			foreach ($callbacks as $callback)
+			{
+				$this->_validate->callback($field, $callback);
+			}
+		}
+	}
 
 	/**
 	 * Reload column definitions.
@@ -373,6 +409,15 @@ class Kohana_ORM {
 	{
 		if (in_array($method, ORM::$_properties))
 		{
+			if ($method === 'validate')
+			{
+				if ( ! isset($this->_validate))
+				{
+					// Initialize the validation object
+					$this->_validate();
+				}
+			}
+
 			// Return the property
 			return $this->{'_'.$method};
 		}
@@ -987,37 +1032,15 @@ class Kohana_ORM {
 	 *
 	 * @return  void
 	 */
-	public function validate(Validate $extra_validation = NULL)
+	public function check(Validate $extra_validation = NULL)
 	{
 		// Determine if any external validation failed
 		$extra_errors = $extra_validation AND ! $extra_validation->check();
 
-		// Build the validation object with its rules and callbacks
-		$array = Validate::factory($this->_object);
+		// Always build a new validation object
+		$this->_validate();
 
-		foreach ($this->rules() as $field => $rules)
-		{
-			$array->rules($field, $rules);
-		}
-
-		 // Use column names by default for labels
-		$columns = array_keys($this->_table_columns);
-
-		// Merge user-defined labels
-		$labels = array_merge(array_combine($columns, $columns), $this->labels());
-
-		foreach ($labels as $field => $label)
-		{
-			$array->label($field, $label);
-		}
-
-		foreach ($this->callbacks() as $field => $callbacks)
-		{
-			foreach ($callbacks as $callback)
-			{
-				$array->callback($field, $callback);
-			}
-		}
+		$array = $this->_validate;
 
 		if (($this->_valid = $array->check()) === FALSE OR $extra_errors)
 		{
@@ -1039,7 +1062,7 @@ class Kohana_ORM {
 		// Require model validation before saving
 		if ( ! $this->_valid)
 		{
-			$this->validate($validate);
+			$this->check($validate);
 		}
 
 		$data = array();
@@ -1096,7 +1119,7 @@ class Kohana_ORM {
 		// Require model validation before saving
 		if ( ! $this->_valid)
 		{
-			$this->validate($validate);
+			$this->check($validate);
 		}
 
 		$data = array();
