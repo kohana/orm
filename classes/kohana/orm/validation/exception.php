@@ -62,7 +62,7 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 		return $this;
 	}
 
-	public function errors($directory = 'form-errors', $translate = TRUE)
+	public function errors($directory = NULL, $translate = TRUE)
 	{
 		return $this->generate_errors($this->_object_name, $this->_objects, $directory, $translate);
 	}
