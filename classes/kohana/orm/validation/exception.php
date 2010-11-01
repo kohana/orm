@@ -25,10 +25,15 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 
 	public function add_object($alias, Validate $object, $has_many = FALSE)
 	{
-		if ($has_many)
+		if ($has_many === TRUE)
 		{
 			// This is most likely a has_many relationship
 			$this->_objects[$alias][]['_object'] = $object;
+		}
+		elseif ($has_many)
+		{
+			// This is most likely a has_many relationship
+			$this->_objects[$alias][$has_many]['_object'] = $object;
 		}
 		else
 		{
@@ -49,10 +54,15 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 	 */
 	public function merge($alias, ORM_Validation_Exception $object, $has_many = FALSE)
 	{
-		if ($has_many)
+		if ($has_many === TRUE)
 		{
 			// This is most likely a has_many relationship
 			$this->_objects[$alias][] = $object->objects();
+		}
+		elseif ($has_many)
+		{
+			// This is most likely a has_many relationship
+			$this->_objects[$alias][$has_many] = $object->objects();
 		}
 		else
 		{
@@ -88,15 +98,10 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 				// Recursively fill the errors array
 				$errors[$alias] = $this->generate_errors($alias, $object, $directory, $translate);
 			}
-			elseif ($alias === '_object')
+			else
 			{
 				// Merge in this array of errors
 				$errors += $object->errors($file, $translate);
-			}
-			else
-			{
-				// Namespace everything else appropriately
-				$errors[$alias] = $object->generate_errors($alias, $object, $directory, $translate);
 			}
 		}
 
