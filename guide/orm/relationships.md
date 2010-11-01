@@ -14,7 +14,7 @@ You can omit any or all of the keys/values in the array on the right, in which c
 
 	protected $_belongs_to = array('[alias name]' => array());
 
-The **alias name** is what is used to access the related model in your code. If you had a `Post` model that belonged to a `User` modle and wished to use the default values of the `belongs_to` configuration then your code would look like this:
+The **alias name** is what is used to access the related model in your code. If you had a `Post` model that belonged to a `User` model and wished to use the default values of the `belongs_to` configuration then your code would look like this:
 
 	protected $_belongs_to = array('user' => array());
 
