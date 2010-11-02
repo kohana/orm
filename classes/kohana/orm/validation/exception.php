@@ -115,7 +115,7 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 	 */
 	public function errors($directory = NULL, $translate = TRUE)
 	{
-		return $this->generate_errors($this->_object_name, $this->_objects, $directory, $translate);
+		return $this->generate_errors($this->_objects, $directory, $translate);
 	}
 
 	/**
@@ -126,7 +126,7 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 	 * @param   mixed   translate the message
 	 * @return  array
 	 */
-	protected function generate_errors($alias, array $array, $directory, $translate)
+	protected function generate_errors(array $array, $directory, $translate)
 	{
 		$errors = array();
 
@@ -145,7 +145,7 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 			if (is_array($object))
 			{
 				// Recursively fill the errors array
-				$errors[$alias] = $this->generate_errors($alias, $object, $directory, $translate);
+				$errors[$alias] = $this->generate_errors($object, $directory, $translate);
 			}
 			else
 			{
