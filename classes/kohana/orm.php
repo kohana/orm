@@ -36,7 +36,7 @@ class Kohana_ORM {
 		'object_name', 'object_plural', 'loaded', 'saved', // Object
 		'primary_key', 'primary_val', 'table_name', 'table_columns', // Table
 		'has_one', 'belongs_to', 'has_many', 'has_many_through', 'load_with', // Relationships
-		'validate' // Validation
+		'validate', // Validation
 	);
 
 	/**
@@ -67,13 +67,15 @@ class Kohana_ORM {
 	protected $_validate  = NULL;
 	protected $_rules     = array();
 	protected $_callbacks = array();
-	protected $_filters   = array();
 	protected $_labels    = array();
+
+	protected $_filters   = array();
 
 	// Current object
 	protected $_object  = array();
 	protected $_changed = array();
 	protected $_related = array();
+	protected $_valid   = FALSE;
 	protected $_loaded  = FALSE;
 	protected $_saved   = FALSE;
 	protected $_sorting;
@@ -86,7 +88,6 @@ class Kohana_ORM {
 	protected $_object_plural;
 	protected $_table_name;
 	protected $_table_columns;
-	protected $_ignored_columns = array();
 
 	// Auto-update columns for creation and updates
 	protected $_updated_column = NULL;
@@ -189,12 +190,6 @@ class Kohana_ORM {
 			$this->_sorting = array($this->_primary_key => 'ASC');
 		}
 
-		if ( ! empty($this->_ignored_columns))
-		{
-			// Optimize for performance
-			$this->_ignored_columns = array_combine($this->_ignored_columns, $this->_ignored_columns);
-		}
-
 		foreach ($this->_belongs_to as $alias => $details)
 		{
 			$defaults['model']       = $alias;
@@ -228,6 +223,40 @@ class Kohana_ORM {
 		$this->clear();
 	}
 
+	/**
+	 * Initializes validation rules, callbacks, and labels
+	 *
+	 * @return void
+	 */
+	protected function _validate()
+	{
+		// Build the validation object with its rules and callbacks
+		$this->_validate = Validate::factory($this->_object);
+
+		foreach ($this->rules() as $field => $rules)
+		{
+			$this->_validate->rules($field, $rules);
+		}
+
+		 // Use column names by default for labels
+		$columns = array_keys($this->_table_columns);
+
+		// Merge user-defined labels
+		$labels = array_merge(array_combine($columns, $columns), $this->labels());
+
+		foreach ($labels as $field => $label)
+		{
+			$this->_validate->label($field, $label);
+		}
+
+		foreach ($this->callbacks() as $field => $callbacks)
+		{
+			foreach ($callbacks as $callback)
+			{
+				$this->_validate->callback($field, $callback);
+			}
+		}
+	}
 
 	/**
 	 * Reload column definitions.
@@ -516,13 +545,11 @@ class Kohana_ORM {
 	 */
 	public function set($column, $value)
 	{
-		if (array_key_exists($column, $this->_ignored_columns))
+		if (array_key_exists($column, $this->_object))
 		{
-			// No processing for ignored columns, just store it
-			$this->_object[$column] = $value;
-		}
-		elseif (array_key_exists($column, $this->_object))
-		{
+			// Filter the data
+			$value = $this->run_filter($column, $value);
+
 			$this->_object[$column] = $value;
 
 			if (isset($this->_table_columns[$column]))
@@ -530,8 +557,8 @@ class Kohana_ORM {
 				// Data has changed
 				$this->_changed[$column] = $column;
 
-				// Object is no longer saved
-				$this->_saved = FALSE;
+				// Object is no longer saved or valid
+				$this->_saved = $this->_valid = FALSE;
 			}
 		}
 		elseif (isset($this->_belongs_to[$column]))
@@ -558,21 +585,39 @@ class Kohana_ORM {
 	 * for loading in post data, etc.
 	 *
 	 * @param   array  array of column => val
+	 * @param   array  array of keys to take from $values
 	 * @return  ORM
 	 */
-	public function values($values)
+	public function values(array $values, array $expected = NULL)
 	{
-		foreach ($values as $column => $value)
+		// Default to expecting everything except the primary key
+		if ($expected === NULL)
 		{
-			if (array_key_exists($column, $this->_object) OR array_key_exists($column, $this->_ignored_columns))
+			$expected = array_keys($this->_table_columns);
+
+			// Don't set the primary key by default
+			unset($values[$this->_primary_key]);
+		}
+
+		foreach ($expected as $key => $column)
+		{
+			if (is_string($key))
 			{
-				// Property of this model
-				$this->set($column, $value);
+				// isset() fails when the value is NULL (we want it to pass)
+				if ( ! array_key_exists($key, $values))
+					continue;
+
+				// Try to set values to a related model
+				$model = $this->{$key}->values($values[$key], $column);
 			}
-			elseif (isset($this->_belongs_to[$column]) OR isset($this->_has_one[$column]))
+			else
 			{
-				// Value is an array of properties for the related model
-				$this->_related[$column] = $value;
+				// isset() fails when the value is NULL (we want it to pass)
+				if ( ! array_key_exists($column, $values))
+					continue;
+
+				// Update the column, respects __set()
+				$this->$column = $values[$column];
 			}
 		}
 
@@ -852,16 +897,16 @@ class Kohana_ORM {
 		{
 			if ($values[$this->_primary_key] !== NULL)
 			{
-				// Flag as loaded and saved
-				$this->_loaded = $this->_saved = TRUE;
+				// Flag as loaded, saved, and valid
+				$this->_loaded = $this->_saved = $this->_valid = TRUE;
 
 				// Store primary key
 				$this->_primary_key_value = $values[$this->_primary_key];
 			}
 			else
 			{
-				// Not loaded or saved
-				$this->_loaded = $this->_saved = FALSE;
+				// Not loaded, saved, or valid
+				$this->_loaded = $this->_saved = $this->_valid = FALSE;
 			}
 		}
 
@@ -907,6 +952,56 @@ class Kohana_ORM {
 	}
 
 	/**
+	 * Filters a value for a specific column
+	 *
+	 * @param  string the column name
+	 * @param  string the value to filter
+	 * @return string
+	 */
+	protected function run_filter($column, $value)
+	{
+		$filters = $this->filters();
+
+		// Get the filters for this column
+		$wildcards = ! empty($filters[TRUE]) ? $filters[TRUE] : array();
+
+		// Merge in the wildcards
+		$filters = ! empty($filters[$column]) ? array_merge($filters[$column], $wildcards) : $wildcards;
+
+		// Execute the filters
+		foreach ($filters as $filter => $params)
+		{
+			// $params needs to be array() if NULL was specified
+			$params = (array) $params;
+
+			// Add the field value to the parameters
+			array_unshift($params, $value);
+
+			if (strpos($filter, '::') === FALSE)
+			{
+				// Use a function call
+				$function = new ReflectionFunction($filter);
+
+				// Call $function($value, $param, ...) with Reflection
+				$value = $function->invokeArgs($params);
+			}
+			else
+			{
+				// Split the class and method of the rule
+				list($class, $method) = explode('::', $filter, 2);
+
+				// Use a static method call
+				$method = new ReflectionMethod($class, $method);
+
+				// Call $Class::$method($value, $param, ...) with Reflection
+				$value = $method->invokeArgs(NULL, $params);
+			}
+		}
+
+		return $value;
+	}
+
+	/**
 	 * Filter definitions for validation
 	 *
 	 * @return array
@@ -937,77 +1032,43 @@ class Kohana_ORM {
 	}
 
 	/**
-	 * Initializes validation rules, callbacks, filters, and labels
-	 *
-	 * @return void
-	 */
-	protected function _validate()
-	{
-		$this->_validate = Validate::factory($this->_object);
-
-		foreach ($this->rules() as $field => $rules)
-		{
-			$this->_validate->rules($field, $rules);
-		}
-
-		foreach ($this->filters() as $field => $filters)
-		{
-			$this->_validate->filters($field, $filters);
-		}
-
-		 // Use column names by default for labels
-		$columns = array_keys($this->_table_columns);
-
-		// Merge user-defined labels
-		$labels = array_merge(array_combine($columns, $columns), $this->labels());
-
-		foreach ($labels as $field => $label)
-		{
-			$this->_validate->label($field, $label);
-		}
-
-		foreach ($this->callbacks() as $field => $callbacks)
-		{
-			foreach ($callbacks as $callback)
-			{
-				$this->_validate->callback($field, $callback);
-			}
-		}
-	}
-
-	/**
 	 * Validates the current model's data
 	 *
-	 * @return  boolean
+	 * @return  void
 	 */
-	public function check()
+	public function check(Validate $extra_validation = NULL)
 	{
-		if ( ! isset($this->_validate))
+		// Determine if any external validation failed
+		$extra_errors = ($extra_validation AND ! $extra_validation->check());
+
+		// Always build a new validation object
+		$this->_validate();
+
+		$array = $this->_validate;
+
+		if (($this->_valid = $array->check()) === FALSE OR $extra_errors)
 		{
-			// Initialize the validation object
-			$this->_validate();
-		}
-		else
-		{
-			// Validation object has been created, just exchange the data array
-			$this->_validate->exchangeArray($this->_object);
+			$exception = new ORM_Validation_Exception($this->_object_name, $array);
+
+			if ($extra_errors)
+			{
+				// Merge any possible errors from the external object
+				$exception->add_object('_external', $extra_validation);
+			}
+			throw $exception;
 		}
 
-		if ($this->_validate->check())
-		{
-			// Fields may have been modified by filters
-			$this->_object = array_merge($this->_object, $this->_validate->getArrayCopy());
-
-			return TRUE;
-		}
-		else
-		{
-			return FALSE;
-		}
+		return $this;
 	}
 
-	public function create()
+	public function create(Validate $validate = NULL)
 	{
+		// Require model validation before saving
+		if ( ! $this->_valid)
+		{
+			$this->check($validate);
+		}
+
 		$data = array();
 		foreach ($this->_changed as $column)
 		{
@@ -1051,12 +1112,18 @@ class Kohana_ORM {
 	 * @param   mixed  primary key of record to update, NULL for current record, TRUE for multiple records
 	 * @return  ORM
 	 */
-	public function update($id = NULL)
+	public function update($id = NULL, Validate $validate = NULL)
 	{
 		if (empty($this->_changed))
 		{
 			// Nothing to update
 			return $this;
+		}
+
+		// Require model validation before saving
+		if ( ! $this->_valid)
+		{
+			$this->check($validate);
 		}
 
 		$data = array();
@@ -1112,6 +1179,17 @@ class Kohana_ORM {
 		}
 
 		return $this;
+	}
+
+	/**
+	 * Updates or Creates the record depending on loaded()
+	 *
+	 * @chainable
+	 * @return  ORM
+	 */
+	public function save(Validate $validate = NULL)
+	{
+		return $this->loaded() ? $this->update(NULL, $validate) : $this->create($validate);
 	}
 
 	/**
