@@ -1175,7 +1175,7 @@ class Kohana_ORM implements serializable {
 	 */
 	public function save(Validate $validate = NULL)
 	{
-		return $this->loaded() ? $this->update(NULL, $validate) : $this->create($validate);
+		return $this->loaded() ? $this->update($validate) : $this->create($validate);
 	}
 
 	/**
