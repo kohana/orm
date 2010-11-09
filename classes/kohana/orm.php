@@ -1197,31 +1197,17 @@ class Kohana_ORM implements serializable {
 	 * Deletes a single record or multiple records, ignoring relationships.
 	 *
 	 * @chainable
-	 * @param   mixed  primary key of record to delete, NULL for current record, TRUE for multiple records
 	 * @return  ORM
 	 */
-	public function delete($id = NULL)
+	public function delete()
 	{
-		if ($id === TRUE)
-		{
-			$this->_build(Database::DELETE);
+		// Use primary key value
+		$id = $this->pk();
 
-			// Delete multiple records
-			$this->_db_builder->execute($this->_db);
-		}
-		else
-		{
-			if ($id === NULL)
-			{
-				// Use primary key value
-				$id = $this->pk();
-			}
-
-			// Delete the object
-			DB::delete($this->_table_name)
-				->where($this->_primary_key, '=', $id)
-				->execute($this->_db);
-		}
+		// Delete the object
+		DB::delete($this->_table_name)
+			->where($this->_primary_key, '=', $id)
+			->execute($this->_db);
 
 		return $this->clear();
 	}
