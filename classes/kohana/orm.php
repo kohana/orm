@@ -1113,7 +1113,7 @@ class Kohana_ORM implements serializable {
 	 * @param   mixed  primary key of record to update, NULL for current record, TRUE for multiple records
 	 * @return  ORM
 	 */
-	public function update($id = NULL, Validate $validate = NULL)
+	public function update(Validate $validate = NULL)
 	{
 		if (empty($this->_changed))
 		{
@@ -1143,41 +1143,26 @@ class Kohana_ORM implements serializable {
 			$data[$column] = $this->_object[$column] = ($format === TRUE) ? time() : date($format);
 		}
 
-		if ($id === TRUE)
+		// Use primary key value
+		$id = $this->pk();
+
+		// Update a single record
+		$query = DB::update($this->_table_name)
+			->set($data)
+			->where($this->_primary_key, '=', $id)
+			->execute($this->_db);
+
+		if (isset($data[$this->_primary_key]))
 		{
-			$this->_build(Database::UPDATE);
-
-			// Update multiple records
-			$this->_db_builder->set($data)->execute($this->_db);
-
-			$this->reset();
+			// Primary key was changed, reflect it
+			$this->_primary_key_value = $data[$this->_primary_key];
 		}
-		else
-		{
-			if ($id === NULL)
-			{
-				// Use primary key value
-				$id = $this->pk();
-			}
 
-			// Update a single record
-			$query = DB::update($this->_table_name)
-				->set($data)
-				->where($this->_primary_key, '=', $id)
-				->execute($this->_db);
+		// Object has been saved
+		$this->_saved = TRUE;
 
-			if (isset($data[$this->_primary_key]))
-			{
-				// Primary key was changed, reflect it
-				$this->_primary_key_value = $data[$this->_primary_key];
-			}
-
-			// Object has been saved
-			$this->_saved = TRUE;
-
-			// All changes have been saved
-			$this->_changed = array();
-		}
+		// All changes have been saved
+		$this->_changed = array();
 
 		return $this;
 	}
