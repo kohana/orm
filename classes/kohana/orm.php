@@ -140,7 +140,7 @@ class Kohana_ORM implements serializable {
 			else
 			{
 				// Passing the primary key
-				$this->find($id);
+				$this->where($this->_primary_key, '=', $id)->find();
 			}
 		}
 		elseif ( ! empty($this->_cast_data))
@@ -325,7 +325,7 @@ class Kohana_ORM implements serializable {
 
 		// Only reload the object if we have one to reload
 		if ($this->_loaded)
-			return $this->find($primary_key);
+			return $this->where($this->_primary_key, '=', $primary_key)->find();
 		else
 			return $this->clear();
 	}
