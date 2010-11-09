@@ -780,10 +780,9 @@ class Kohana_ORM implements serializable {
 	 * Finds and loads a single database row into the object.
 	 *
 	 * @chainable
-	 * @param   mixed  primary key
 	 * @return  ORM
 	 */
-	public function find($id = NULL)
+	public function find()
 	{
 		if ( ! empty($this->_load_with))
 		{
@@ -795,12 +794,6 @@ class Kohana_ORM implements serializable {
 		}
 
 		$this->_build(Database::SELECT);
-
-		if ($id !== NULL)
-		{
-			// Search for a specific column
-			$this->_db_builder->where($this->_table_name.'.'.$this->_primary_key, '=', $id);
-		}
 
 		return $this->_load_result(FALSE);
 	}
