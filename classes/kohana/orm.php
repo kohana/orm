@@ -295,8 +295,8 @@ class Kohana_ORM {
 			AND count($args) == 1
 		) {
 			return $this
-			->where($column, '=', $args[0])
-			->find();
+				->where($column, '=', $args[0])
+				->find();
 		}
 		else
 		{
