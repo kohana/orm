@@ -290,6 +290,11 @@ class Kohana_ORM {
 
 			return $this;
 		}
+		elseif (substr($method, 0, 8) == 'find_by_' AND ($column = substr($method, 8)) AND count($args) == 1) {
+			return $this
+				->where($column, '=', $args[0])
+				->find();
+		}
 		else
 		{
 			throw new Kohana_Exception('Invalid method :method called in :class',
