@@ -292,7 +292,7 @@ class Kohana_ORM {
 		}
 		elseif (substr($method, 0, 8) == 'find_by_'
 			AND array_key_exists($column = substr($method, 8), $this->_object)
-			AND count($args) == 1
+			AND !empty($args)
 		) {
 			return $this
 				->where($column, '=', $args[0])
