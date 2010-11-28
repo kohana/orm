@@ -9,21 +9,27 @@
  */
 class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 
-	// Array of validation objects
+	/**
+   * Array of validation objects
+   * @var array
+   */
 	protected $_objects = array();
 
-	// The _object_name property of the main ORM model this exception was created for
+	/**
+   * The _object_name property of the main ORM model this exception was created for
+   * @var string
+   */
 	protected $_object_name = NULL;
 
 	/**
 	 * Constructs a new exception for the specified model
 	 *
-	 * @param   string   The _object_name of the model this exception is for
-	 * @param   validate The Validate object of the model
-	 * @param   string   The error message
-	 * @param   array    The array of values for the error message
-	 * @param   int      The error code for the exception
-	 * @return  void
+	 * @param string $object_name The _object_name of the model this exception is for
+	 * @param Validate $object The Validate object of the model
+	 * @param string $message The error message
+	 * @param array $values The array of values for the error message
+	 * @param int $code The error code for the exception
+	 * @return void
 	 */
 	public function __construct($object_name, Validate $object, $message = 'Failed to validate array', array $values = NULL, $code = 0)
 	{
@@ -49,10 +55,10 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 	 *     //   ),
 	 *     // );
 	 * 
-	 * @param  String   The relationship alias from the model
-	 * @param  Validate The validate object to merge
-	 * @param  Mixed    The array key to use if this exception can be merged multiple times
-	 * @return Object
+	 * @param  string $alias The relationship alias from the model
+	 * @param  Validate $object The validate object to merge
+	 * @param  mixed $has_many The array key to use if this exception can be merged multiple times
+	 * @return ORM_Validation_Exception
 	 */
 	public function add_object($alias, Validate $object, $has_many = FALSE)
 	{
@@ -78,10 +84,10 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 	 * Merges an ORM_Validation_Exception object into the current exception
 	 * Useful when you want to combine errors into one array
 	 *
-	 * @param  String                   The relationship alias from the model
-	 * @param  ORM_Validation_Exception The exception to merge
-	 * @param  Mixed                    The array key to use if this exception can be merged multiple times
-	 * @return Object
+	 * @param  string $alias The relationship alias from the model
+	 * @param  ORM_Validation_Exception $object The exception to merge
+	 * @param  mixed $has_many The array key to use if this exception can be merged multiple times
+	 * @return ORM_Validation_Exception
 	 */
 	public function merge($alias, ORM_Validation_Exception $object, $has_many = FALSE)
 	{
@@ -109,9 +115,10 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 	 *     // Will load Model_User errors from messages/orm-validation/user.php
 	 *     $e->errors('orm-validation');
 	 * 
-	 * @param   string  directory to load error messages from
-	 * @param   mixed   translate the message
+	 * @param   string  $directory directory to load error messages from
+	 * @param   mixed $translate translate the message
 	 * @return  array
+   * @see generate_errors()
 	 */
 	public function errors($directory = NULL, $translate = TRUE)
 	{
@@ -121,10 +128,10 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 	/**
 	 * Recursive method to fetch all the errors in this exception
 	 *
-	 * @param   array  array of Validate objects to get errors from
-	 * @param   string directory to load error messages from
-	 * @param   mixed   translate the message
-	 * @return  array
+	 * @param array $array array of Validate objects to get errors from
+	 * @param string $directory directory to load error messages from
+	 * @param mixed $translate translate the message
+	 * @return array
 	 */
 	protected function generate_errors(array $array, $directory, $translate)
 	{
