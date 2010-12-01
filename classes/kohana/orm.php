@@ -1594,5 +1594,4 @@ class Kohana_ORM implements serializable {
 
 		return $this;
 	}
-}
-// End ORM
+} // End ORM
