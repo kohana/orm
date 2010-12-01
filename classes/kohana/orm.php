@@ -1,5 +1,4 @@
-<?php
-defined('SYSPATH') or die('No direct script access.');
+<?php defined('SYSPATH') or die('No direct script access.');
 
 /**
  * [Object Relational Mapping][ref-orm] (ORM) is a method of abstracting database
@@ -483,8 +482,10 @@ class Kohana_ORM implements serializable {
 		$this->_object = $this->_changed = $this->_related = array();
 
 		// Only reload the object if we have one to reload
-		if ($this->_loaded) return $this->find($primary_key);
-		else return $this->clear();
+		if ($this->_loaded)
+			return $this->find($primary_key);
+		else
+			return $this->clear();
 	}
 
 	/**
@@ -497,11 +498,11 @@ class Kohana_ORM implements serializable {
 	{
 		return
 		(
-		isset($this->_object[$column]) OR
-		isset($this->_related[$column]) OR
-		isset($this->_has_one[$column]) OR
-		isset($this->_belongs_to[$column]) OR
-		isset($this->_has_many[$column])
+			isset($this->_object[$column]) OR
+			isset($this->_related[$column]) OR
+			isset($this->_has_one[$column]) OR
+			isset($this->_belongs_to[$column]) OR
+			isset($this->_has_many[$column])
 		);
 	}
 
@@ -1005,7 +1006,7 @@ class Kohana_ORM implements serializable {
 		// Select all columns by default
 		$this->_db_builder->select($this->_table_name.'.*');
 
-		if ( ! isset($this->_db_applied['order_by']) AND !empty($this->_sorting))
+		if ( ! isset($this->_db_applied['order_by']) AND ! empty($this->_sorting))
 		{
 			foreach ($this->_sorting as $column => $direction)
 			{
@@ -1108,6 +1109,16 @@ class Kohana_ORM implements serializable {
 	}
 
 	/**
+	 * Rule definitions for validation
+	 *
+	 * @return array
+	 */
+	public function rules()
+	{
+		return array();
+	}
+	
+	/**
 	 * Filters a value for a specific column
 	 *
 	 * @param  string $column the column name
@@ -1155,6 +1166,36 @@ class Kohana_ORM implements serializable {
 		}
 
 		return $value;
+	}
+
+	/**
+	 * Filter definitions for validation
+	 *
+	 * @return array
+	 */
+	public function filters()
+	{
+		return array();
+	}
+
+	/**
+	 * Callback definitions for validation
+	 *
+	 * @return array
+	 */
+	public function callbacks()
+	{
+		return array();
+	}
+
+	/**
+	 * Label definitions for validation
+	 *
+	 * @return array
+	 */
+	public function labels()
+	{
+		return array();
 	}
 
 	/**
@@ -1218,9 +1259,9 @@ class Kohana_ORM implements serializable {
 		}
 
 		$result = DB::insert($this->_table_name)
-				->columns(array_keys($data))
-				->values(array_values($data))
-				->execute($this->_db);
+			->columns(array_keys($data))
+			->values(array_values($data))
+			->execute($this->_db);
 
 		if ( ! array_key_exists($this->_primary_key, $data))
 		{
@@ -1294,9 +1335,9 @@ class Kohana_ORM implements serializable {
 
 			// Update a single record
 			$query = DB::update($this->_table_name)
-					->set($data)
-					->where($this->_primary_key, '=', $id)
-					->execute($this->_db);
+				->set($data)
+				->where($this->_primary_key, '=', $id)
+				->execute($this->_db);
 
 			if (isset($data[$this->_primary_key]))
 			{
@@ -1360,70 +1401,23 @@ class Kohana_ORM implements serializable {
 	}
 
 	/**
-	 * Adds more where conditions to either the remove() and has() methods
-	 * @see ORM::remove()
-	 * @see ORM::has()
-	 * @param Database_Query_Builder $db Database query object
-	 * @return Database_Query_Builder
-	 */
-	protected function _and_where($db, $where)
-	{
-		if ($where !== null)
-		{
-			foreach ($where as $column => $w)
-			{
-				if (is_string($column))
-				{
-					$db->where($column, '=', $w);
-				}
-				elseif (is_array($w))
-				{
-					$count = count($w);
-					if ($count == 2)
-					{
-						// array containing array(column, value)
-						$db->where($w[0], '=', $w[1]);
-					}
-					elseif ($count == 3)
-					{
-						// array containing array(column, operator, value)
-						$db->where($w[0], $w[1], $w[2]);
-					}
-				}
-			}
-		}
-
-		return $db;
-	}
-
-	/**
 	 * Tests if this object has a relationship to a different model,
 	 * and return the database result if found, having access to the extra data
 	 * on the pivot table. Support for multiple pks from many models at once
 	 *
 	 * @param   string  $alias alias of the has_many "through" relationship
 	 * @param   ORM     $model related ORM model
-	 * @param   array   $where [Optional] Aditional "where" clause to the check
-	 * Usages:<br>
-	 * <code>
-	 *   array('column' => 'value', 'column2' => 'value2')
-	 *   // or
-	 *   array(array('column', 'value'), array('column2', 'value2'))
-	 *   // or
-	 *   array(array('column', 'IN', array(1,2,3,4)), array('column2', 'IS NOT', null))
-	 * </code>
 	 * @return  Database_Result
 	 */
-	public function has($alias, ORM $model, array $where = null)
+	public function has($alias, ORM $model)
 	{
-		return
-			$this
-			->_and_where(DB::select(), $where)
+		// Return count of matches as boolean
+		return (bool) DB::select(array('COUNT("*")', 'records_found'))
 			->from($this->_has_many[$alias]['through'])
 			->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk())
 			->where($this->_has_many[$alias]['far_key'], '=', $model->pk())
-			->as_object()
-			->execute($this->_db);
+			->execute($this->_db)
+			->get('records_found');
 	}
 
 	/**
@@ -1437,13 +1431,13 @@ class Kohana_ORM implements serializable {
 	public function add($alias, ORM $model, $data = NULL)
 	{
 		$columns = array($this->_has_many[$alias]['foreign_key'], $this->_has_many[$alias]['far_key']);
-		$values = array($this->pk(), $model->pk());
+		$values  = array($this->pk(), $model->pk());
 
 		if ($data !== NULL)
 		{
 			// Additional data stored in pivot table
 			$columns = array_merge($columns, array_keys($data));
-			$values = array_merge($values, array_values($data));
+			$values  = array_merge($values, array_values($data));
 		}
 
 		DB::insert($this->_has_many[$alias]['through'])
@@ -1459,21 +1453,11 @@ class Kohana_ORM implements serializable {
 	 *
 	 * @param   string $alias  alias of the has_many "through" relationship
 	 * @param   ORM    $model  related ORM model
-	 * @param   array   $where [Optional] Aditional "where" clause to the check
-	 * Usages:<br>
-	 * <code>
-	 *   array('column' => 'value', 'column2' => 'value2')
-	 *   // or
-	 *   array(array('column', 'value'), array('column2', 'value2'))
-	 *   // or
-	 *   array(array('column', 'IN', array(1,2,3,4)), array('column2', 'IS NOT', null))
-	 * </code>
 	 * @return  ORM
 	 */
-	public function remove($alias, ORM $model, array $where = null)
+	public function remove($alias, ORM $model)
 	{
-		$this
-			->_and_where(DB::delete($this->_has_many[$alias]['through']), $where)
+		DB::delete($this->_has_many[$alias]['through'])
 			->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk())
 			->where($this->_has_many[$alias]['far_key'], '=', $model->pk())
 			->execute($this->_db);
@@ -1503,9 +1487,9 @@ class Kohana_ORM implements serializable {
 		$this->_build(Database::SELECT);
 
 		$records = $this->_db_builder->from($this->_table_name)
-				->select(array('COUNT("*")', 'records_found'))
-				->execute($this->_db)
-				->get('records_found');
+			->select(array('COUNT("*")', 'records_found'))
+			->execute($this->_db)
+			->get('records_found');
 
 		// Add back in selected columns
 		$this->_db_pending += $selects;
@@ -1601,9 +1585,9 @@ class Kohana_ORM implements serializable {
 	{
 		if ($next AND $this->_db_reset)
 		{
-			$this->_db_pending = array();
-			$this->_db_applied = array();
-			$this->_db_builder = NULL;
+			$this->_db_pending   = array();
+			$this->_db_applied   = array();
+			$this->_db_builder   = NULL;
 			$this->_with_applied = array();
 		}
 
