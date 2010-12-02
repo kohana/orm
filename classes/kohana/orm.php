@@ -13,8 +13,8 @@
  * @package    Kohana/ORM
  * @category   Base
  * @author     Kohana Team
- * @copyright  (c) 2007-2009 Kohana Team
- * @license    http://kohanaphp.com/license.html
+ * @copyright  (c) 2007-2010 Kohana Team
+ * @license    http://kohanaframework.org/license
  */
 class Kohana_ORM {
 
@@ -633,7 +633,7 @@ class Kohana_ORM {
 		}
 		else
 		{
-			if( ! isset($this->_with_applied[$parent_path]))
+			if ( ! isset($this->_with_applied[$parent_path]))
 			{
 				// If the parent path hasn't been joined yet, do it first (otherwise LEFT JOINs fail)
 				$this->with($parent_path);
@@ -997,7 +997,11 @@ class Kohana_ORM {
 		// Replace the object and reset the object status
 		$this->_object = $this->_changed = $this->_related = array();
 
-		return $this->find($primary_key);
+		// Only reload the object if we have one to reload
+		if ($this->_loaded)
+			return $this->find($primary_key);
+		else
+			return $this->clear();
 	}
 
 	/**
