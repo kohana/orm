@@ -292,7 +292,7 @@ class Kohana_ORM implements serializable {
 
 	/**
 	 * Database query builder
-	 * @var Kohana_Database_Query_Builder_Where
+	 * @var Database_Query_Builder_Where
 	 */
 	protected $_db_builder;
 
@@ -752,10 +752,11 @@ class Kohana_ORM implements serializable {
 			// Filter the data
 			$value = $this->run_filter($column, $value);
 
-			$this->_object[$column] = $value;
-
-			if (isset($this->_table_columns[$column]))
+			// See if the data really changed
+			if ($value !== $this->_object[$column])
 			{
+				$this->_object[$column] = $value;
+
 				// Data has changed
 				$this->_changed[$column] = $column;
 
