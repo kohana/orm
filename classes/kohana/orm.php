@@ -531,14 +531,11 @@ class Kohana_ORM implements serializable {
 	 */
 	public function __isset($column)
 	{
-		return
-		(
-			isset($this->_object[$column]) OR
+		return (isset($this->_object[$column]) OR
 			isset($this->_related[$column]) OR
 			isset($this->_has_one[$column]) OR
 			isset($this->_belongs_to[$column]) OR
-			isset($this->_has_many[$column])
-		);
+			isset($this->_has_many[$column]));
 	}
 
 	/**
@@ -811,7 +808,7 @@ class Kohana_ORM implements serializable {
 					continue;
 
 				// Try to set values to a related model
-				$model = $this->{$key}->values($values[$key], $column);
+				$this->{$key}->values($values[$key], $column);
 			}
 			else
 			{
@@ -1159,10 +1156,10 @@ class Kohana_ORM implements serializable {
 		$filters = $this->filters();
 
 		// Get the filters for this column
-		$wildcards = ! empty($filters[TRUE]) ? $filters[TRUE] : array();
+		$wildcards = empty($filters[TRUE]) ? array() : $filters[TRUE];
 
 		// Merge in the wildcards
-		$filters = ! empty($filters[$column]) ? array_merge($filters[$column], $wildcards) : $wildcards;
+		$filters = empty($filters[$column]) ? $wildcards : array_merge($filters[$column], $wildcards);
 
 		// Execute the filters
 		foreach ($filters as $filter => $params)
@@ -1348,7 +1345,7 @@ class Kohana_ORM implements serializable {
 		$id = $this->pk();
 
 		// Update a single record
-		$query = DB::update($this->_table_name)
+		DB::update($this->_table_name)
 			->set($data)
 			->where($this->_primary_key, '=', $id)
 			->execute($this->_db);
