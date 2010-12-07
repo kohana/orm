@@ -20,6 +20,10 @@ class Kohana_ORM {
 
 	// Current relationships
 	protected $_has_one    = array();
+	
+	/**
+	 *@var  array  Array of belongs to relationships. See [Relationships](orm/relationships) for usage.
+	 */
 	protected $_belongs_to = array();
 	protected $_has_many   = array();
 
