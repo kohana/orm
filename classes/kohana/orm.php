@@ -228,7 +228,7 @@ class Kohana_ORM {
 	public function __sleep()
 	{
 		// Store only information about the object
-		return array('_object_name', '_object', '_changed', '_loaded', '_saved', '_sorting');
+		return array('_object_name', '_object', '_changed', '_loaded', '_saved', '_sorting', '_ignored_columns');
 	}
 
 	/**
@@ -479,6 +479,12 @@ class Kohana_ORM {
 				// Make the table name plural
 				$this->_table_name = Inflector::plural($this->_table_name);
 			}
+		}
+
+		if ( ! empty($this->_ignored_columns))
+		{
+			// Optimize for performance
+			$this->_ignored_columns = array_combine($this->_ignored_columns, $this->_ignored_columns);
 		}
 
 		foreach ($this->_belongs_to as $alias => $details)
