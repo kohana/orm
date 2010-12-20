@@ -8,7 +8,7 @@
  * [ref-orm]: http://wikipedia.org/wiki/Object-relational_mapping
  * [ref-act]: http://wikipedia.org/wiki/Active_record
  *
- * @package    ORM
+ * @package    Kohana/ORM
  * @author     Kohana Team
  * @copyright  (c) 2007-2010 Kohana Team
  * @license    http://kohanaframework.org/license
