@@ -395,13 +395,13 @@ class Kohana_ORM implements serializable {
 	}
 
 	/**
-	 * Initializes validation rules, callbacks, and labels
+	 * Initializes validation rules, and labels
 	 *
 	 * @return void
 	 */
 	protected function _validate()
 	{
-		// Build the validation object with its rules and callbacks
+		// Build the validation object with its rules
 		$this->_validate = Validate::factory($this->_object);
 
 		foreach ($this->rules() as $field => $rules)
@@ -418,14 +418,6 @@ class Kohana_ORM implements serializable {
 		foreach ($labels as $field => $label)
 		{
 			$this->_validate->label($field, $label);
-		}
-
-		foreach ($this->callbacks() as $field => $callbacks)
-		{
-			foreach ($callbacks as $callback)
-			{
-				$this->_validate->callback($field, $callback);
-			}
 		}
 	}
 
@@ -1180,16 +1172,6 @@ class Kohana_ORM implements serializable {
 	 * @return array
 	 */
 	public function filters()
-	{
-		return array();
-	}
-
-	/**
-	 * Callback definitions for validation
-	 *
-	 * @return array
-	 */
-	public function callbacks()
 	{
 		return array();
 	}
