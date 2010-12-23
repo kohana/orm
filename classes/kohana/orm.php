@@ -90,6 +90,7 @@ class Kohana_ORM implements serializable {
 		'primary_key', 'primary_val', 'table_name', 'table_columns', // Table
 		'has_one', 'belongs_to', 'has_many', 'has_many_through', 'load_with', // Relationships
 		'validate', // Validation
+		'updated_column', 'created_column',
 	);
 
 	/**
