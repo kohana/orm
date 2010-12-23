@@ -43,7 +43,7 @@
  * @method ORM offset()
  * @method ORM cached()
  * @method integer count_last_query()
- * @method Validate validate()
+ * @method Validation validation()
  *
  * @property string $object_name Name of the model
  * @property string $object_plural Plural name of the model
@@ -89,8 +89,8 @@ class Kohana_ORM implements serializable {
 		'object_name', 'object_plural', 'loaded', 'saved', // Object
 		'primary_key', 'primary_val', 'table_name', 'table_columns', // Table
 		'has_one', 'belongs_to', 'has_many', 'has_many_through', 'load_with', // Relationships
-		'validate', // Validation
 		'updated_column', 'created_column',
+		'validation',
 	);
 
 	/**
@@ -134,30 +134,10 @@ class Kohana_ORM implements serializable {
 	protected $_load_with = array();
 
 	/**
-	 * Validation members
-	 * @var Validate
+	 * Validation object created before saving/updating
+	 * @var Validation
 	 */
-	protected $_validate = NULL;
-
-	/**
-	 * @var array
-	 */
-	protected $_rules = array();
-
-	/**
-	 * @var array
-	 */
-	protected $_callbacks = array();
-
-	/**
-	 * @var array
-	 */
-	protected $_labels = array();
-
-	/**
-	 * @var array
-	 */
-	protected $_filters = array();
+	protected $_validation = NULL;
 
 	/**
 	 * Current object
@@ -416,18 +396,18 @@ class Kohana_ORM implements serializable {
 	}
 
 	/**
-	 * Initializes validation rules, callbacks, and labels
+	 * Initializes validation rules, and labels
 	 *
 	 * @return void
 	 */
-	protected function _validate()
+	protected function _validation()
 	{
-		// Build the validation object with its rules and callbacks
-		$this->_validate = Validate::factory($this->_object);
+		// Build the validation object with its rules
+		$this->_validation = Validation::factory($this->_object);
 
 		foreach ($this->rules() as $field => $rules)
 		{
-			$this->_validate->rules($field, $rules);
+			$this->_validation->rules($field, $rules);
 		}
 
 		// Use column names by default for labels
@@ -438,15 +418,7 @@ class Kohana_ORM implements serializable {
 
 		foreach ($labels as $field => $label)
 		{
-			$this->_validate->label($field, $label);
-		}
-
-		foreach ($this->callbacks() as $field => $callbacks)
-		{
-			foreach ($callbacks as $callback)
-			{
-				$this->_validate->callback($field, $callback);
-			}
+			$this->_validation->label($field, $label);
 		}
 	}
 
@@ -613,12 +585,12 @@ class Kohana_ORM implements serializable {
 	{
 		if (in_array($method, ORM::$_properties))
 		{
-			if ($method === 'validate')
+			if ($method === 'validation')
 			{
-				if ( ! isset($this->_validate))
+				if ( ! isset($this->_validation))
 				{
 					// Initialize the validation object
-					$this->_validate();
+					$this->_validation();
 				}
 			}
 
@@ -1206,16 +1178,6 @@ class Kohana_ORM implements serializable {
 	}
 
 	/**
-	 * Callback definitions for validation
-	 *
-	 * @return array
-	 */
-	public function callbacks()
-	{
-		return array();
-	}
-
-	/**
 	 * Label definitions for validation
 	 *
 	 * @return array
@@ -1228,18 +1190,18 @@ class Kohana_ORM implements serializable {
 	/**
 	 * Validates the current model's data
 	 *
-	 * @param  Validate $extra_validation Validate object
+	 * @param  Validation $extra_validation Validation object
 	 * @return ORM
 	 */
-	public function check(Validate $extra_validation = NULL)
+	public function check(Validation $extra_validation = NULL)
 	{
 		// Determine if any external validation failed
 		$extra_errors = ($extra_validation AND ! $extra_validation->check());
 
 		// Always build a new validation object
-		$this->_validate();
+		$this->_validation();
 
-		$array = $this->_validate;
+		$array = $this->_validation;
 
 		if (($this->_valid = $array->check()) === FALSE OR $extra_errors)
 		{
@@ -1258,15 +1220,15 @@ class Kohana_ORM implements serializable {
 
 	/**
 	 * Insert a new object to the database
-	 * @param  Validate $validate Validate object
+	 * @param  Validation $validation Validation object
 	 * @return ORM
 	 */
-	public function create(Validate $validate = NULL)
+	public function create(Validation $validation = NULL)
 	{
 		// Require model validation before saving
 		if ( ! $this->_valid)
 		{
-			$this->check($validate);
+			$this->check($validation);
 		}
 
 		$data = array();
@@ -1309,10 +1271,10 @@ class Kohana_ORM implements serializable {
 	 * Updates a single record or multiple records
 	 *
 	 * @chainable
-	 * @param  Validate $validate Validate object
+	 * @param  Validation $validation Validation object
 	 * @return ORM
 	 */
-	public function update(Validate $validate = NULL)
+	public function update(Validation $validation = NULL)
 	{
 		if (empty($this->_changed))
 		{
@@ -1323,7 +1285,7 @@ class Kohana_ORM implements serializable {
 		// Require model validation before saving
 		if ( ! $this->_valid)
 		{
-			$this->check($validate);
+			$this->check($validation);
 		}
 
 		$data = array();
@@ -1370,12 +1332,12 @@ class Kohana_ORM implements serializable {
 	 * Updates or Creates the record depending on loaded()
 	 *
 	 * @chainable
-	 * @param  Validate $validate Validate object
+	 * @param  Validation $validation Validation object
 	 * @return ORM
 	 */
-	public function save(Validate $validate = NULL)
+	public function save(Validation $validation = NULL)
 	{
-		return $this->loaded() ? $this->update($validate) : $this->create($validate);
+		return $this->loaded() ? $this->update($validation) : $this->create($validation);
 	}
 
 	/**
