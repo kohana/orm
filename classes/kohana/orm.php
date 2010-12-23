@@ -1421,20 +1421,12 @@ class Kohana_ORM implements serializable {
 	 *
 	 * @param  string  $alias Alias of the has_many "through" relationship
 	 * @param  ORM     $model Related ORM model
-	 * @param  array   $data  Additional data to store in "through"/pivot table
 	 * @return ORM
 	 */
-	public function add($alias, ORM $model, $data = NULL)
+	public function add($alias, ORM $model)
 	{
 		$columns = array($this->_has_many[$alias]['foreign_key'], $this->_has_many[$alias]['far_key']);
 		$values  = array($this->pk(), $model->pk());
-
-		if ($data !== NULL)
-		{
-			// Additional data stored in pivot table
-			$columns = array_merge($columns, array_keys($data));
-			$values  = array_merge($values, array_values($data));
-		}
 
 		DB::insert($this->_has_many[$alias]['through'])
 			->columns($columns)
