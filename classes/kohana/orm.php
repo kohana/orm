@@ -1419,6 +1419,13 @@ class Kohana_ORM implements serializable {
 	/**
 	 * Adds a new relationship to between this model and another.
 	 *
+	 *     // Add the login role using a model instance
+	 *     $model->add('roles', ORM::factory('role', array('name' => 'login')));
+	 *     // Add the login role if you know the roles.id is 5
+	 *     $model->add('roles', 5);
+	 *     // Add multiple roles (for example, from checkboxes on a form)
+	 *     $model->add('roles', array(1, 2, 3, 4));
+	 *
 	 * @param  string  $alias   Alias of the has_many "through" relationship
 	 * @param  mixed   $far_key Related model, primary key, or an array of primary keys
 	 * @return ORM
@@ -1454,6 +1461,15 @@ class Kohana_ORM implements serializable {
 
 	/**
 	 * Removes a relationship between this model and another.
+	 *
+	 *     // Remove a role using a model instance
+	 *     $model->remove('roles', ORM::factory('role', array('name' => 'login')));
+	 *     // Remove the role knowing the primary key
+	 *     $model->add('roles', 5);
+	 *     // Remove multiple roles (for example, from checkboxes on a form)
+	 *     $model->remove('roles', array(1, 2, 3, 4));
+	 *     // Remove all related roles
+	 *     $model->remove('roles');
 	 *
 	 * @param  string $alias   Alias of the has_many "through" relationship
 	 * @param  mixed  $far_key Related model, primary key, or an array of primary keys
