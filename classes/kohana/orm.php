@@ -1382,7 +1382,7 @@ class Kohana_ORM implements serializable {
 	/**
 	 * Adds a new relationship to between this model and another.
 	 *
-	 * @param  string  $alias Alias of the has_many "through" relationship
+	 * @param  string  $alias   Alias of the has_many "through" relationship
 	 * @param  mixed   $far_key Related model, primary key, or an array of primary keys
 	 * @return ORM
 	 */
@@ -1418,18 +1418,26 @@ class Kohana_ORM implements serializable {
 	/**
 	 * Removes a relationship between this model and another.
 	 *
-	 * @param  string $alias  Alias of the has_many "through" relationship
-	 * @param  ORM    $model  Related ORM model
+	 * @param  string $alias   Alias of the has_many "through" relationship
+	 * @param  mixed  $far_key Related model, primary key, or an array of primary keys
 	 * @return ORM
 	 */
-	public function remove($alias, ORM $model = NULL)
+	public function remove($alias, $far_key = NULL)
 	{
 		$query = DB::delete($this->_has_many[$alias]['through'])
 			->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk());
 
-		if ($model !== NULL)
+		$far_key = $far_key instanceof ORM ? $far_key->pk() : $far_key;
+
+		if (is_array($far_key))
 		{
-			$query->where($this->_has_many[$alias]['far_key'], '=', $model->pk());
+			// Remove all the relationships in the array
+			$query->where($this->_has_many[$alias]['far_key'], 'IN', $far_key);
+		}
+		elseif ($far_key !== NULL)
+		{
+			// Remove a single relationship
+			$query->where($this->_has_many[$alias]['far_key'], '=', $far_key);
 		}
 
 		$query->execute($this->_db);
