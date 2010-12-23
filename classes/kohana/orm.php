@@ -139,26 +139,6 @@ class Kohana_ORM implements serializable {
 	protected $_validate = NULL;
 
 	/**
-	 * @var array
-	 */
-	protected $_rules = array();
-
-	/**
-	 * @var array
-	 */
-	protected $_callbacks = array();
-
-	/**
-	 * @var array
-	 */
-	protected $_labels = array();
-
-	/**
-	 * @var array
-	 */
-	protected $_filters = array();
-
-	/**
 	 * Current object
 	 * @var array
 	 */
