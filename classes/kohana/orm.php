@@ -1420,18 +1420,34 @@ class Kohana_ORM implements serializable {
 	 * Adds a new relationship to between this model and another.
 	 *
 	 * @param  string  $alias Alias of the has_many "through" relationship
-	 * @param  ORM     $model Related ORM model
+	 * @param  mixed   $far_key Related model, primary key, or an array of primary keys
 	 * @return ORM
 	 */
-	public function add($alias, ORM $model)
+	public function add($alias, $far_key)
 	{
-		$columns = array($this->_has_many[$alias]['foreign_key'], $this->_has_many[$alias]['far_key']);
-		$values  = array($this->pk(), $model->pk());
+		if ($far_key instanceof ORM)
+		{
+			$far_key = $far_key->pk();
+		}
 
-		DB::insert($this->_has_many[$alias]['through'])
-			->columns($columns)
-			->values($values)
-			->execute($this->_db);
+		$columns = array($this->_has_many[$alias]['foreign_key'], $this->_has_many[$alias]['far_key']);
+		$foreign_key = $this->pk();
+
+		$query = DB::insert($this->_has_many[$alias]['through'], $columns);
+
+		if (is_array($far_key))
+		{
+			foreach ($far_key as $key)
+			{
+				$query->values(array($foreign_key, $key));
+			}
+		}
+		else
+		{
+			$query->values(array($foreign_key, $far_key));
+		}
+
+		$query->execute($this->_db);
 
 		return $this;
 	}
