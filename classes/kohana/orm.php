@@ -1451,12 +1451,17 @@ class Kohana_ORM implements serializable {
 	 * @param  ORM    $model  Related ORM model
 	 * @return ORM
 	 */
-	public function remove($alias, ORM $model)
+	public function remove($alias, ORM $model = NULL)
 	{
-		DB::delete($this->_has_many[$alias]['through'])
-			->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk())
-			->where($this->_has_many[$alias]['far_key'], '=', $model->pk())
-			->execute($this->_db);
+		$query = DB::delete($this->_has_many[$alias]['through'])
+			->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk());
+
+		if ($model !== NULL)
+		{
+			$query->where($this->_has_many[$alias]['far_key'], '=', $model->pk());
+		}
+
+		$query->execute($this->_db);
 
 		return $this;
 	}
