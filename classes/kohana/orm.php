@@ -1428,7 +1428,7 @@ class Kohana_ORM implements serializable {
 	 *     // Remove a role using a model instance
 	 *     $model->remove('roles', ORM::factory('role', array('name' => 'login')));
 	 *     // Remove the role knowing the primary key
-	 *     $model->add('roles', 5);
+	 *     $model->remove('roles', 5);
 	 *     // Remove multiple roles (for example, from checkboxes on a form)
 	 *     $model->remove('roles', array(1, 2, 3, 4));
 	 *     // Remove all related roles
