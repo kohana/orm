@@ -1378,10 +1378,7 @@ class Kohana_ORM implements serializable {
 	 */
 	public function has($alias, $far_keys)
 	{
-		if ($far_keys instanceof ORM)
-		{
-			$far_keys = $far_keys->pk();
-		}
+		$far_keys = ($far_keys instanceof ORM) ? $far_keys->pk() : $far_keys;
 
 		// We need an array to simplify the logic
 		$far_keys = (array) $far_keys;
@@ -1406,32 +1403,22 @@ class Kohana_ORM implements serializable {
 	 *     // Add multiple roles (for example, from checkboxes on a form)
 	 *     $model->add('roles', array(1, 2, 3, 4));
 	 *
-	 * @param  string  $alias   Alias of the has_many "through" relationship
-	 * @param  mixed   $far_key Related model, primary key, or an array of primary keys
+	 * @param  string  $alias    Alias of the has_many "through" relationship
+	 * @param  mixed   $far_keys Related model, primary key, or an array of primary keys
 	 * @return ORM
 	 */
-	public function add($alias, $far_key)
+	public function add($alias, $far_keys)
 	{
-		if ($far_key instanceof ORM)
-		{
-			$far_key = $far_key->pk();
-		}
+		$far_keys = ($far_keys instanceof ORM) ? $far_keys->pk() : $far_keys;
 
 		$columns = array($this->_has_many[$alias]['foreign_key'], $this->_has_many[$alias]['far_key']);
 		$foreign_key = $this->pk();
 
 		$query = DB::insert($this->_has_many[$alias]['through'], $columns);
 
-		if (is_array($far_key))
+		foreach ( (array) $far_keys as $key)
 		{
-			foreach ($far_key as $key)
-			{
-				$query->values(array($foreign_key, $key));
-			}
-		}
-		else
-		{
-			$query->values(array($foreign_key, $far_key));
+			$query->values(array($foreign_key, $key));
 		}
 
 		$query->execute($this->_db);
@@ -1451,26 +1438,21 @@ class Kohana_ORM implements serializable {
 	 *     // Remove all related roles
 	 *     $model->remove('roles');
 	 *
-	 * @param  string $alias   Alias of the has_many "through" relationship
-	 * @param  mixed  $far_key Related model, primary key, or an array of primary keys
+	 * @param  string $alias    Alias of the has_many "through" relationship
+	 * @param  mixed  $far_keys Related model, primary key, or an array of primary keys
 	 * @return ORM
 	 */
-	public function remove($alias, $far_key = NULL)
+	public function remove($alias, $far_keys = NULL)
 	{
+		$far_keys = ($far_keys instanceof ORM) ? $far_keys->pk() : $far_keys;
+
 		$query = DB::delete($this->_has_many[$alias]['through'])
 			->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk());
 
-		$far_key = $far_key instanceof ORM ? $far_key->pk() : $far_key;
-
-		if (is_array($far_key))
+		if ($far_keys !== NULL)
 		{
 			// Remove all the relationships in the array
-			$query->where($this->_has_many[$alias]['far_key'], 'IN', $far_key);
-		}
-		elseif ($far_key !== NULL)
-		{
-			// Remove a single relationship
-			$query->where($this->_has_many[$alias]['far_key'], '=', $far_key);
+			$query->where($this->_has_many[$alias]['far_key'], 'IN', (array) $far_keys);
 		}
 
 		$query->execute($this->_db);
