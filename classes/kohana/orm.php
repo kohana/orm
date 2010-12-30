@@ -1363,22 +1363,37 @@ class Kohana_ORM implements serializable {
 
 	/**
 	 * Tests if this object has a relationship to a different model,
-	 * and return the database result if found, having access to the extra data
-	 * on the pivot table. Support for multiple pks from many models at once
+	 * or an array of different models.
 	 *
-	 * @param  string  $alias Alias of the has_many "through" relationship
-	 * @param  ORM     $model Related ORM model
+	 *     // Check if $model has the login role
+	 *     $model->has('roles', ORM::factory('role', array('name' => 'login')));
+	 *     // Check for the login role if you know the roles.id is 5
+	 *     $model->has('roles', 5);
+	 *     // Check for all of the following roles
+	 *     $model->has('roles', array(1, 2, 3, 4));
+
+	 * @param  string  $alias    Alias of the has_many "through" relationship
+	 * @param  mixed   $far_keys Related model, primary key, or an array of primary keys
 	 * @return Database_Result
 	 */
-	public function has($alias, ORM $model)
+	public function has($alias, $far_keys)
 	{
-		// Return count of matches as boolean
-		return (bool) DB::select(array('COUNT("*")', 'records_found'))
+		if ($far_keys instanceof ORM)
+		{
+			$far_keys = $far_keys->pk();
+		}
+
+		// We need an array to simplify the logic
+		$far_keys = (array) $far_keys;
+
+		$count = (int) DB::select(array('COUNT("*")', 'records_found'))
 			->from($this->_has_many[$alias]['through'])
 			->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk())
-			->where($this->_has_many[$alias]['far_key'], '=', $model->pk())
-			->execute($this->_db)
-			->get('records_found');
+			->where($this->_has_many[$alias]['far_key'], 'IN', $far_keys)
+			->execute($this->_db)->get('records_found');
+
+		// Rows found need to match the rows searched
+		return $count === count($far_keys);
 	}
 
 	/**
