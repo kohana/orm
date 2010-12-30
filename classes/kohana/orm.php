@@ -316,7 +316,7 @@ class Kohana_ORM implements serializable {
 			else
 			{
 				// Passing the primary key
-				$this->where($this->_primary_key, '=', $id)->find();
+				$this->where($this->_table_name.'.'.$this->_primary_key, '=', $id)->find();
 			}
 		}
 		elseif ( ! empty($this->_cast_data))
@@ -1445,7 +1445,7 @@ class Kohana_ORM implements serializable {
 		$query = DB::delete($this->_has_many[$alias]['through'])
 			->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk());
 
-		$far_key = $far_key instanceof ORM ? $far_key->pk() : $far_key;
+		$far_key = ($far_key instanceof ORM) ? $far_key->pk() : $far_key;
 
 		if (is_array($far_key))
 		{
