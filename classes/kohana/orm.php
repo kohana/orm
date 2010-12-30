@@ -20,7 +20,7 @@ class Kohana_ORM {
 
 	// Current relationships
 	protected $_has_one    = array();
-	
+
 	/**
 	 *@var  array  Array of belongs to relationships. See [Relationships](orm/relationships) for usage.
 	 */
@@ -532,11 +532,17 @@ class Kohana_ORM {
 
 		foreach ($this->_rules as $field => $rules)
 		{
+			// PHP converts TRUE to int 1, so we have to fix that
+			$field = ($field === 1) ? TRUE : $field;
+
 			$this->_validate->rules($field, $rules);
 		}
 
 		foreach ($this->_filters as $field => $filters)
 		{
+			// PHP converts TRUE to int 1, so we have to fix that
+			$field = ($field === 1) ? TRUE : $field;
+
 			$this->_validate->filters($field, $filters);
 		}
 
@@ -553,6 +559,9 @@ class Kohana_ORM {
 
 		foreach ($this->_callbacks as $field => $callbacks)
 		{
+			// PHP converts TRUE to int 1, so we have to fix that
+			$field = ($field === 1) ? TRUE : $field;
+			
 			foreach ($callbacks as $callback)
 			{
 				if (is_string($callback) AND method_exists($this, $callback))
