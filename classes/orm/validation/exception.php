@@ -2,7 +2,7 @@
 /**
  * ORM Validation exceptions.
  *
- * @package    ORM
+ * @package    Kohana/ORM
  * @author     Kohana Team
  * @copyright  (c) 2008-2009 Kohana Team
  * @license    http://kohanaphp.com/license

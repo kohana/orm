@@ -8,7 +8,7 @@
  * [ref-orm]: http://wikipedia.org/wiki/Object-relational_mapping
  * [ref-act]: http://wikipedia.org/wiki/Active_record
  *
- * @package    ORM
+ * @package    Kohana/ORM
  * @author     Kohana Team
  * @copyright  (c) 2007-2010 Kohana Team
  * @license    http://kohanaframework.org/license
@@ -43,7 +43,7 @@
  * @method ORM offset()
  * @method ORM cached()
  * @method integer count_last_query()
- * @method Validate validate()
+ * @method Validation validation()
  *
  * @property string $object_name Name of the model
  * @property string $object_plural Plural name of the model
@@ -58,6 +58,8 @@
  * @property array $has_many
  * @property array $has_many_through
  * @property array $load_with
+ * @property string $updated_column
+ * @property string $created_column
  */
 class Kohana_ORM implements serializable {
 
@@ -89,7 +91,8 @@ class Kohana_ORM implements serializable {
 		'object_name', 'object_plural', 'loaded', 'saved', // Object
 		'primary_key', 'primary_val', 'table_name', 'table_columns', // Table
 		'has_one', 'belongs_to', 'has_many', 'has_many_through', 'load_with', // Relationships
-		'validate', // Validation
+		'updated_column', 'created_column',
+		'validation',
 	);
 
 	/**
@@ -133,30 +136,10 @@ class Kohana_ORM implements serializable {
 	protected $_load_with = array();
 
 	/**
-	 * Validation members
-	 * @var Validate
+	 * Validation object created before saving/updating
+	 * @var Validation
 	 */
-	protected $_validate = NULL;
-
-	/**
-	 * @var array
-	 */
-	protected $_rules = array();
-
-	/**
-	 * @var array
-	 */
-	protected $_callbacks = array();
-
-	/**
-	 * @var array
-	 */
-	protected $_labels = array();
-
-	/**
-	 * @var array
-	 */
-	protected $_filters = array();
+	protected $_validation = NULL;
 
 	/**
 	 * Current object
@@ -292,7 +275,7 @@ class Kohana_ORM implements serializable {
 
 	/**
 	 * Database query builder
-	 * @var Kohana_Database_Query_Builder_Where
+	 * @var Database_Query_Builder_Where
 	 */
 	protected $_db_builder;
 
@@ -415,18 +398,18 @@ class Kohana_ORM implements serializable {
 	}
 
 	/**
-	 * Initializes validation rules, callbacks, and labels
+	 * Initializes validation rules, and labels
 	 *
 	 * @return void
 	 */
-	protected function _validate()
+	protected function _validation()
 	{
-		// Build the validation object with its rules and callbacks
-		$this->_validate = Validate::factory($this->_object);
+		// Build the validation object with its rules
+		$this->_validation = Validation::factory($this->_object);
 
 		foreach ($this->rules() as $field => $rules)
 		{
-			$this->_validate->rules($field, $rules);
+			$this->_validation->rules($field, $rules);
 		}
 
 		// Use column names by default for labels
@@ -437,15 +420,7 @@ class Kohana_ORM implements serializable {
 
 		foreach ($labels as $field => $label)
 		{
-			$this->_validate->label($field, $label);
-		}
-
-		foreach ($this->callbacks() as $field => $callbacks)
-		{
-			foreach ($callbacks as $callback)
-			{
-				$this->_validate->callback($field, $callback);
-			}
+			$this->_validation->label($field, $label);
 		}
 	}
 
@@ -531,14 +506,11 @@ class Kohana_ORM implements serializable {
 	 */
 	public function __isset($column)
 	{
-		return
-		(
-			isset($this->_object[$column]) OR
+		return (isset($this->_object[$column]) OR
 			isset($this->_related[$column]) OR
 			isset($this->_has_one[$column]) OR
 			isset($this->_belongs_to[$column]) OR
-			isset($this->_has_many[$column])
-		);
+			isset($this->_has_many[$column]));
 	}
 
 	/**
@@ -615,12 +587,12 @@ class Kohana_ORM implements serializable {
 	{
 		if (in_array($method, ORM::$_properties))
 		{
-			if ($method === 'validate')
+			if ($method === 'validation')
 			{
-				if ( ! isset($this->_validate))
+				if ( ! isset($this->_validation))
 				{
 					// Initialize the validation object
-					$this->_validate();
+					$this->_validation();
 				}
 			}
 
@@ -752,10 +724,11 @@ class Kohana_ORM implements serializable {
 			// Filter the data
 			$value = $this->run_filter($column, $value);
 
-			$this->_object[$column] = $value;
-
-			if (isset($this->_table_columns[$column]))
+			// See if the data really changed
+			if ($value !== $this->_object[$column])
 			{
+				$this->_object[$column] = $value;
+
 				// Data has changed
 				$this->_changed[$column] = $column;
 
@@ -810,7 +783,7 @@ class Kohana_ORM implements serializable {
 					continue;
 
 				// Try to set values to a related model
-				$model = $this->{$key}->values($values[$key], $column);
+				$this->{$key}->values($values[$key], $column);
 			}
 			else
 			{
@@ -1158,10 +1131,10 @@ class Kohana_ORM implements serializable {
 		$filters = $this->filters();
 
 		// Get the filters for this column
-		$wildcards = ! empty($filters[TRUE]) ? $filters[TRUE] : array();
+		$wildcards = empty($filters[TRUE]) ? array() : $filters[TRUE];
 
 		// Merge in the wildcards
-		$filters = ! empty($filters[$column]) ? array_merge($filters[$column], $wildcards) : $wildcards;
+		$filters = empty($filters[$column]) ? $wildcards : array_merge($filters[$column], $wildcards);
 
 		// Execute the filters
 		foreach ($filters as $filter => $params)
@@ -1207,16 +1180,6 @@ class Kohana_ORM implements serializable {
 	}
 
 	/**
-	 * Callback definitions for validation
-	 *
-	 * @return array
-	 */
-	public function callbacks()
-	{
-		return array();
-	}
-
-	/**
 	 * Label definitions for validation
 	 *
 	 * @return array
@@ -1229,18 +1192,18 @@ class Kohana_ORM implements serializable {
 	/**
 	 * Validates the current model's data
 	 *
-	 * @param  Validate $extra_validation Validate object
+	 * @param  Validation $extra_validation Validation object
 	 * @return ORM
 	 */
-	public function check(Validate $extra_validation = NULL)
+	public function check(Validation $extra_validation = NULL)
 	{
 		// Determine if any external validation failed
 		$extra_errors = ($extra_validation AND ! $extra_validation->check());
 
 		// Always build a new validation object
-		$this->_validate();
+		$this->_validation();
 
-		$array = $this->_validate;
+		$array = $this->_validation;
 
 		if (($this->_valid = $array->check()) === FALSE OR $extra_errors)
 		{
@@ -1259,15 +1222,15 @@ class Kohana_ORM implements serializable {
 
 	/**
 	 * Insert a new object to the database
-	 * @param  Validate $validate Validate object
+	 * @param  Validation $validation Validation object
 	 * @return ORM
 	 */
-	public function create(Validate $validate = NULL)
+	public function create(Validation $validation = NULL)
 	{
 		// Require model validation before saving
 		if ( ! $this->_valid)
 		{
-			$this->check($validate);
+			$this->check($validation);
 		}
 
 		$data = array();
@@ -1310,10 +1273,10 @@ class Kohana_ORM implements serializable {
 	 * Updates a single record or multiple records
 	 *
 	 * @chainable
-	 * @param  Validate $validate Validate object
+	 * @param  Validation $validation Validation object
 	 * @return ORM
 	 */
-	public function update(Validate $validate = NULL)
+	public function update(Validation $validation = NULL)
 	{
 		if (empty($this->_changed))
 		{
@@ -1324,7 +1287,7 @@ class Kohana_ORM implements serializable {
 		// Require model validation before saving
 		if ( ! $this->_valid)
 		{
-			$this->check($validate);
+			$this->check($validation);
 		}
 
 		$data = array();
@@ -1347,7 +1310,7 @@ class Kohana_ORM implements serializable {
 		$id = $this->pk();
 
 		// Update a single record
-		$query = DB::update($this->_table_name)
+		DB::update($this->_table_name)
 			->set($data)
 			->where($this->_primary_key, '=', $id)
 			->execute($this->_db);
@@ -1371,12 +1334,12 @@ class Kohana_ORM implements serializable {
 	 * Updates or Creates the record depending on loaded()
 	 *
 	 * @chainable
-	 * @param  Validate $validate Validate object
+	 * @param  Validation $validation Validation object
 	 * @return ORM
 	 */
-	public function save(Validate $validate = NULL)
+	public function save(Validation $validation = NULL)
 	{
-		return $this->loaded() ? $this->update($validate) : $this->create($validate);
+		return $this->loaded() ? $this->update($validation) : $this->create($validation);
 	}
 
 	/**
@@ -1421,27 +1384,42 @@ class Kohana_ORM implements serializable {
 	/**
 	 * Adds a new relationship to between this model and another.
 	 *
-	 * @param  string  $alias Alias of the has_many "through" relationship
-	 * @param  ORM     $model Related ORM model
-	 * @param  array   $data  Additional data to store in "through"/pivot table
+	 *     // Add the login role using a model instance
+	 *     $model->add('roles', ORM::factory('role', array('name' => 'login')));
+	 *     // Add the login role if you know the roles.id is 5
+	 *     $model->add('roles', 5);
+	 *     // Add multiple roles (for example, from checkboxes on a form)
+	 *     $model->add('roles', array(1, 2, 3, 4));
+	 *
+	 * @param  string  $alias   Alias of the has_many "through" relationship
+	 * @param  mixed   $far_key Related model, primary key, or an array of primary keys
 	 * @return ORM
 	 */
-	public function add($alias, ORM $model, $data = NULL)
+	public function add($alias, $far_key)
 	{
-		$columns = array($this->_has_many[$alias]['foreign_key'], $this->_has_many[$alias]['far_key']);
-		$values  = array($this->pk(), $model->pk());
-
-		if ($data !== NULL)
+		if ($far_key instanceof ORM)
 		{
-			// Additional data stored in pivot table
-			$columns = array_merge($columns, array_keys($data));
-			$values  = array_merge($values, array_values($data));
+			$far_key = $far_key->pk();
 		}
 
-		DB::insert($this->_has_many[$alias]['through'])
-			->columns($columns)
-			->values($values)
-			->execute($this->_db);
+		$columns = array($this->_has_many[$alias]['foreign_key'], $this->_has_many[$alias]['far_key']);
+		$foreign_key = $this->pk();
+
+		$query = DB::insert($this->_has_many[$alias]['through'], $columns);
+
+		if (is_array($far_key))
+		{
+			foreach ($far_key as $key)
+			{
+				$query->values(array($foreign_key, $key));
+			}
+		}
+		else
+		{
+			$query->values(array($foreign_key, $far_key));
+		}
+
+		$query->execute($this->_db);
 
 		return $this;
 	}
@@ -1449,16 +1427,38 @@ class Kohana_ORM implements serializable {
 	/**
 	 * Removes a relationship between this model and another.
 	 *
-	 * @param  string $alias  Alias of the has_many "through" relationship
-	 * @param  ORM    $model  Related ORM model
+	 *     // Remove a role using a model instance
+	 *     $model->remove('roles', ORM::factory('role', array('name' => 'login')));
+	 *     // Remove the role knowing the primary key
+	 *     $model->remove('roles', 5);
+	 *     // Remove multiple roles (for example, from checkboxes on a form)
+	 *     $model->remove('roles', array(1, 2, 3, 4));
+	 *     // Remove all related roles
+	 *     $model->remove('roles');
+	 *
+	 * @param  string $alias   Alias of the has_many "through" relationship
+	 * @param  mixed  $far_key Related model, primary key, or an array of primary keys
 	 * @return ORM
 	 */
-	public function remove($alias, ORM $model)
+	public function remove($alias, $far_key = NULL)
 	{
-		DB::delete($this->_has_many[$alias]['through'])
-			->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk())
-			->where($this->_has_many[$alias]['far_key'], '=', $model->pk())
-			->execute($this->_db);
+		$query = DB::delete($this->_has_many[$alias]['through'])
+			->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk());
+
+		$far_key = $far_key instanceof ORM ? $far_key->pk() : $far_key;
+
+		if (is_array($far_key))
+		{
+			// Remove all the relationships in the array
+			$query->where($this->_has_many[$alias]['far_key'], 'IN', $far_key);
+		}
+		elseif ($far_key !== NULL)
+		{
+			// Remove a single relationship
+			$query->where($this->_has_many[$alias]['far_key'], '=', $far_key);
+		}
+
+		$query->execute($this->_db);
 
 		return $this;
 	}
