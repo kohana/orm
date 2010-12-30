@@ -13,13 +13,17 @@
  * @package    Kohana/ORM
  * @category   Base
  * @author     Kohana Team
- * @copyright  (c) 2007-2009 Kohana Team
- * @license    http://kohanaphp.com/license.html
+ * @copyright  (c) 2007-2010 Kohana Team
+ * @license    http://kohanaframework.org/license
  */
 class Kohana_ORM {
 
 	// Current relationships
 	protected $_has_one    = array();
+
+	/**
+	 *@var  array  Array of belongs to relationships. See [Relationships](orm/relationships) for usage.
+	 */
 	protected $_belongs_to = array();
 	protected $_has_many   = array();
 
@@ -228,7 +232,7 @@ class Kohana_ORM {
 	public function __sleep()
 	{
 		// Store only information about the object
-		return array('_object_name', '_object', '_changed', '_loaded', '_saved', '_sorting');
+		return array('_object_name', '_object', '_changed', '_loaded', '_saved', '_sorting', '_ignored_columns');
 	}
 
 	/**
@@ -481,6 +485,12 @@ class Kohana_ORM {
 			}
 		}
 
+		if ( ! empty($this->_ignored_columns))
+		{
+			// Optimize for performance
+			$this->_ignored_columns = array_combine($this->_ignored_columns, $this->_ignored_columns);
+		}
+
 		foreach ($this->_belongs_to as $alias => $details)
 		{
 			$defaults['model']       = $alias;
@@ -522,11 +532,17 @@ class Kohana_ORM {
 
 		foreach ($this->_rules as $field => $rules)
 		{
+			// PHP converts TRUE to int 1, so we have to fix that
+			$field = ($field === 1) ? TRUE : $field;
+
 			$this->_validate->rules($field, $rules);
 		}
 
 		foreach ($this->_filters as $field => $filters)
 		{
+			// PHP converts TRUE to int 1, so we have to fix that
+			$field = ($field === 1) ? TRUE : $field;
+
 			$this->_validate->filters($field, $filters);
 		}
 
@@ -543,6 +559,9 @@ class Kohana_ORM {
 
 		foreach ($this->_callbacks as $field => $callbacks)
 		{
+			// PHP converts TRUE to int 1, so we have to fix that
+			$field = ($field === 1) ? TRUE : $field;
+			
 			foreach ($callbacks as $callback)
 			{
 				if (is_string($callback) AND method_exists($this, $callback))
@@ -629,7 +648,7 @@ class Kohana_ORM {
 		}
 		else
 		{
-			if( ! isset($this->_with_applied[$parent_path]))
+			if ( ! isset($this->_with_applied[$parent_path]))
 			{
 				// If the parent path hasn't been joined yet, do it first (otherwise LEFT JOINs fail)
 				$this->with($parent_path);
@@ -993,7 +1012,11 @@ class Kohana_ORM {
 		// Replace the object and reset the object status
 		$this->_object = $this->_changed = $this->_related = array();
 
-		return $this->find($primary_key);
+		// Only reload the object if we have one to reload
+		if ($this->_loaded)
+			return $this->find($primary_key);
+		else
+			return $this->clear();
 	}
 
 	/**
