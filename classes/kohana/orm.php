@@ -58,6 +58,8 @@
  * @property array $has_many
  * @property array $has_many_through
  * @property array $load_with
+ * @property string $updated_column
+ * @property string $created_column
  */
 class Kohana_ORM implements serializable {
 
