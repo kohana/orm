@@ -358,12 +358,6 @@ class Kohana_ORM implements serializable {
 			}
 		}
 
-		if ( ! isset($this->_sorting))
-		{
-			// Default sorting
-			$this->_sorting = array($this->_primary_key => 'ASC');
-		}
-
 		foreach ($this->_belongs_to as $alias => $details)
 		{
 			$defaults['model'] = $alias;
