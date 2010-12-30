@@ -619,9 +619,9 @@ class Kohana_ORM implements serializable {
 		{
 			return $this->_object[$column];
 		}
-		elseif (isset($this->_related[$column]) AND $this->_related[$column]->_loaded)
+		elseif (isset($this->_related[$column]))
 		{
-			// Return related model that has already been loaded
+			// Return related model that has already been fetched
 			return $this->_related[$column];
 		}
 		elseif (isset($this->_belongs_to[$column]))
