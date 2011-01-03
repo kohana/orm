@@ -481,7 +481,9 @@ class Kohana_ORM extends Model implements serializable {
 
 		// Only reload the object if we have one to reload
 		if ($this->_loaded)
-			return $this->where($this->_primary_key, '=', $primary_key)->find();
+			return $this->clear()
+				->where($this->_table_name.'.'.$this->_primary_key, '=', $primary_key)
+				->find();
 		else
 			return $this->clear();
 	}
@@ -939,6 +941,9 @@ class Kohana_ORM extends Model implements serializable {
 	 */
 	public function find()
 	{
+		if ($this->_loaded)
+			throw new Kohana_Exception('Method find() cannot be called on loaded objects');
+
 		if ( ! empty($this->_load_with))
 		{
 			foreach ($this->_load_with as $alias)
@@ -960,6 +965,9 @@ class Kohana_ORM extends Model implements serializable {
 	 */
 	public function find_all()
 	{
+		if ($this->_loaded)
+			throw new Kohana_Exception('Method find_all() cannot be called on loaded objects');
+
 		if ( ! empty($this->_load_with))
 		{
 			foreach ($this->_load_with as $alias)
