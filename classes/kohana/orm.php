@@ -61,7 +61,7 @@
  * @property string $updated_column
  * @property string $created_column
  */
-class Kohana_ORM implements serializable {
+class Kohana_ORM extends Model implements serializable {
 
 	/**
 	 * Stores column information for ORM models
