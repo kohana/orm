@@ -1331,7 +1331,7 @@ class Kohana_ORM {
 	 */
 	protected function empty_pk()
 	{
-		return (empty($this->_object[$this->_primary_key]) AND $this->_object[$this->_primary_key] !== '0');
+		return (empty($this->_object[$this->_primary_key]) OR $this->_object[$this->_primary_key] === '0');
 	}
 
 	/**
