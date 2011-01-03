@@ -226,12 +226,6 @@ class Kohana_ORM implements serializable {
 	protected $_primary_key = 'id';
 
 	/**
-	 * Table primary value
-	 * @var string
-	 */
-	protected $_primary_val = 'name';
-
-	/**
 	 * Primary key value
 	 * @var mixed
 	 */
