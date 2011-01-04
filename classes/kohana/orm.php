@@ -1379,6 +1379,10 @@ class Kohana_ORM extends Model implements serializable {
 		// We need an array to simplify the logic
 		$far_keys = (array) $far_keys;
 
+		// Nothing to check if the model isn't loaded or we don't have any far_keys
+		if ( ! $far_keys OR ! $this->_loaded)
+			return FALSE;
+
 		$count = (int) DB::select(array('COUNT("*")', 'records_found'))
 			->from($this->_has_many[$alias]['through'])
 			->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk())
