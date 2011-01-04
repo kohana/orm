@@ -1223,6 +1223,9 @@ class Kohana_ORM extends Model implements serializable {
 	 */
 	public function create(Validation $validation = NULL)
 	{
+		if ($this->_loaded)
+			throw new Kohana_Exception('Cannot create :model model because it is already loaded.', array(':model' => $this->_object_name));
+
 		// Require model validation before saving
 		if ( ! $this->_valid)
 		{
@@ -1274,6 +1277,9 @@ class Kohana_ORM extends Model implements serializable {
 	 */
 	public function update(Validation $validation = NULL)
 	{
+		if ( ! $this->_loaded)
+			throw new Kohana_Exception('Cannot update :model model because it is not loaded.', array(':model' => $this->_object_name));
+
 		if (empty($this->_changed))
 		{
 			// Nothing to update
@@ -1346,6 +1352,9 @@ class Kohana_ORM extends Model implements serializable {
 	 */
 	public function delete()
 	{
+		if ( ! $this->_loaded)
+			throw new Kohana_Exception('Cannot delete :model model because it is not loaded.', array(':model' => $this->_object_name));
+
 		// Use primary key value
 		$id = $this->pk();
 
