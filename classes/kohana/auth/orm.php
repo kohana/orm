@@ -179,9 +179,9 @@ class Kohana_Auth_ORM extends Auth {
 	 *
 	 * @return  mixed
 	 */
-	public function get_user()
+	public function get_user($default = NULL)
 	{
-		$user = parent::get_user();
+		$user = parent::get_user($default);
 
 		if ( ! $user)
 		{
