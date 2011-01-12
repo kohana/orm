@@ -18,7 +18,7 @@ CREATE TABLE users
   id serial,
   email varchar(318) NOT NULL,
   username varchar(32) NOT NULL,
-  "password" varchar(50) NOT NULL,
+  "password" varchar(64) NOT NULL,
   logins integer NOT NULL DEFAULT 0,
   last_login integer,
   CONSTRAINT users_id_pkey PRIMARY KEY (id),
