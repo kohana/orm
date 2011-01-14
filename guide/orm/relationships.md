@@ -8,7 +8,12 @@ A `belongs_to` relation should be used when you have one model that belongs to a
 
 This is the base `belongs_to` relationship:
 
-	protected $_belongs_to = array('[alias name]' => array('model' => '[model name]', 'foreign_key' => '[column]'));
+	protected $_belongs_to = array(
+		'[alias name]' => array(
+			'model'       => '[model name]',
+			'foreign_key' => '[column]',
+		),
+	);
 
 You can omit any or all of the keys/values in the array on the right, in which case defaults are used:
 
@@ -22,17 +27,30 @@ To access the user model, you would use `$post->user`.  Since we're using the de
 
 Let's say your `Post` database table schema doesn't have a `user_id` column but instead has an `author_id` column which is a foreign key for a record in the `User` table. You could use code like this:
 
-	protected $_belongs_to = array('user' => array('foreign_key' => 'author_id'));
+	protected $_belongs_to = array(
+		'user' => array(
+			'foreign_key' => 'author_id',
+		),
+	);
 
 If you wanted access a post's author by using code like `$post->author` then you would simply need to change the alias and add the `model` index:
 
-	protected $_belongs_to = array('author' => array('model' => 'user', 'foreign_key' => 'author_id'));
+	protected $_belongs_to = array(
+		'author' => array(
+			'model'       => 'user',
+		),
+	);
 
 ## has_many
 
 The standard `has_many` relationship will likely fall on the other side of a `belongs_to` relationship.  In the above examples, a post belongs to a user.  From the user's perspective, a user has many posts. A has_many relationship is defined below:
 
-	protected $_has_many = array('[alias name]' => array('model' => '[model name]', 'foreign_key' => '[column]'));
+	protected $_has_many = array(
+		'[alias name]' => array(
+			'model'       => '[model name]',
+			'foreign_key' => '[column]',
+		),
+	);
 
 Again, you can omit all keys in the right array to use the defaults:
 
@@ -48,42 +66,58 @@ The model name used by default will be the singular name of the alias using the 
 
 Let's assume now you want to access the posts using the name `stories` instead, and are still using the `author_id` key as in the `belongs_to` example.  You would define your has_many relationship as:
 
-	protected $_has_many = array('stories' => array('model' => 'post', 'foreign_key' => 'author_id'));
+	protected $_has_many = array(
+		'stories' => array(
+			'model'       => 'post',
+			'foreign_key' => 'author_id',
+		),
+	);
 
 ## has_one
 
-A `has_one` relationship almost identical to a `has_many` relationship.  In a `has_one` relationship, there can be 1 and only 1 relationship (rather than 1 or more in a has_many). If a user can only have one post or story, rather than many then the code would look like this:
+A `has_one` relationship is almost identical to a `has_many` relationship.  In a `has_one` relationship, there can be 1 and only 1 relationship (rather than 1 or more in a has_many). If a user can only have one post or story, rather than many then the code would look like this:
 
-	protected $_has_one = array('story' => array('model' => 'post', 'foreign_key' => 'author_id'));
+	protected $_has_one = array(
+		'story' => array(
+			'model'       => 'post',
+			'foreign_key' => 'author_id',
+		),
+	);
 
 ## has_many "through"
 
-A `has_many "through"` relationship is used for many-to-many relationships.  For instance, let's assume now we have an additional model, called `Category`.  Posts may belong to more than one category, and each category may have more than one post.  To link them together, an additional model (and table) is needed with columns for a `post_id` and a `category_id` (sometimes called a pivot table).  We'll name the model for this `Post_Category` and the corresponding table `post_categories`.
+A `has_many "through"` relationship is used for many-to-many relationships.  For instance, let's assume now we have an additional model, called `Category`.  Posts may belong to more than one category, and each category may have more than one post.  To link them together, an additional table is needed with columns for a `post_id` and a `category_id` (sometimes called a pivot table).  We'll name the model for this `Post_Category` and the corresponding table `categories_posts`.
 
 To define the `has_many` "through" relationship, the same syntax for standard has_many relationships is used with the addition of a 'through' parameter.  Let's assume we're working with the Post model:
 
-	protected $_has_many = array('categories' => array('model' => 'category', 'through' => 'post_category'));
+	protected $_has_many = array(
+		'categories' => array(
+			'model'   => 'category',
+			'through' => 'categories_posts',
+		),
+	);
 
 In the Category model:
 
-	protected $_has_many = array('posts' => array('model' => 'post', 'through' => 'post_category'));
+	protected $_has_many = array(
+		'posts' => array(
+			'model'   => 'post',
+			'through' => 'categories_posts',
+		),
+	);
 
-In the Post_Category model:
-
-	protected $_belongs_to = array('post' => array(), 'category' => array());
-
-Defaults were used in the `belongs_to` relationships above, but you could override these if you wish to use aliasing, etc.  To access the categories and posts, you simply use `$post->categories->find_all()` and `$category->posts->find_all()`
+To access the categories and posts, you simply use `$post->categories->find_all()` and `$category->posts->find_all()`
 
 Methods are available to check for, add, and remove relationships for many-to-many relationships.  Let's assume you have a $post model loaded, and a $category model loaded as well.  You can check to see if the $post is related to this $category with the following call:
 
-	$post->has('category', $category);
+	$post->has('categories', $category);
 
-The first parameter is the alias name to use (in case your post model has more than one relationship to the category model - although this will be rare) and the second is the model to check for a relationship with.
+The first parameter is the alias name to use (in case your post model has more than one relationship to the category model) and the second is the model to check for a relationship with.
 
-Assuming you want to add the relationship (by creating a new record in the post_categories table), you would simply do:
+Assuming you want to add the relationship (by creating a new record in the categories_posts table), you would simply do:
 
-	$post->add('category', $category);
+	$post->add('categories', $category);
 
 To remove:
 
-	$post->remove('category', $category);
+	$post->remove('categories', $category);

@@ -2,10 +2,10 @@
 
 ## Load a new model instance
 
-To create a new `Model_User` instance you can do two things:
+To create a new `Model_User` instance, you can do one of two things:
 
 	$user = ORM::factory('user');
-	// or
+	// Or
 	$user = new Model_User();
 
 ## Inserting
@@ -28,27 +28,28 @@ Insert the new record into the database by running [ORM::save]:
 [ORM::save] checks to see if a value is set for the primary key (`id` by default). If the primary key is set, then ORM will execute an `UPDATE` otherwise it will execute an `INSERT`.
 
 
-## Finding a object
+## Finding an object
 
-To find an object you can call the [ORM::find] function or pass the id into the ORM constructor:
+To find an object you can call the [ORM::find] method or pass the id into the ORM constructor:
 
-	//find user with ID 20
-	$user = ORM::factory('user');
-	$user->find(20);
-	// or
+	// Find user with ID 20
+	$user = ORM::factory('user')
+		->where('id', '=', 20)
+		->find();
+	// Or
 	$user = ORM::factory('user', 20);
 
 ## Check that ORM loaded a record
 
-Use the [ORM::loaded] function to check that ORM successfully loaded a record.
+Use the [ORM::loaded] method to check that ORM successfully loaded a record.
 
 	if ($user->loaded())
 	{
-		//load was successful
+		// Load was successful
 	}
 	else
 	{
-		//error
+		// Error
 	}
 
 ## Updating and Saving
@@ -67,12 +68,8 @@ And if you want to save the changes you just made back to the database, just run
 ## Deleting
 
 
-To delete an object, you can call the [ORM::delete] function on a loaded ORM model, or pass an id to the delete function of a unloaded model.
+To delete an object, you can call the [ORM::delete] method on a loaded ORM model.
 
-	$user = ORM::factory('user')->find(20);
+	$user = ORM::factory('user', 20);
 	$user->delete();
-
-or
-
-	ORM::factory('user')->delete(20);
 
