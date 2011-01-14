@@ -122,6 +122,12 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 	 */
 	public function errors($directory = NULL, $translate = TRUE)
 	{
+		if ($directory !== NULL)
+		{
+			// Everything starts at $directory/$object_name
+			$directory .= '/'.$this->_object_name;
+		}
+
 		return $this->generate_errors($this->_objects, $directory, $translate);
 	}
 
@@ -152,12 +158,12 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 			if (is_array($object))
 			{
 				// Recursively fill the errors array
-				$errors[$alias] = $this->generate_errors($object, $directory, $translate);
+				$errors[$alias] = $this->generate_errors($object, $file, $translate);
 			}
 			else
 			{
 				// Merge in this array of errors
-				$errors += $object->errors($file, $translate);
+				$errors += $object->errors($directory, $translate);
 			}
 		}
 
