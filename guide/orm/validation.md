@@ -53,7 +53,9 @@ Certain forms contain information that should not be validated by the model, but
 			$user->password = $_POST['password'];
 
 			$extra_rules = Validation::factory($_POST)
-				->rule('password_confirm', 'matches', array(':validation', ':field', 'password'));
+				->rule('password_confirm', 'matches', array(
+					':validation', ':field', 'password'
+				));
 
 			// Pass the extra rules to be validated with the model
 			$user->save($extra_rules);
@@ -74,3 +76,5 @@ Because the validation object was passed as a parameter to the model, any errors
 	);
 
 This ensures that errors from multiple validation objects and models will never overwrite each other.
+
+[!!] The power of the [ORM_Validation_Exception] can be leveraged in many different ways to merge errors from related models. Take a look at the list of [Examples](examples) for some great use cases.
