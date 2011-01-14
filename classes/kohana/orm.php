@@ -1118,11 +1118,11 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Filters a value for a specific column
 	 *
-	 * @param  string $column The column name
+	 * @param  string $field  The column name
 	 * @param  string $value  The value to filter
 	 * @return string
 	 */
-	protected function run_filter($column, $value)
+	protected function run_filter($field, $value)
 	{
 		$filters = $this->filters();
 
@@ -1130,23 +1130,45 @@ class Kohana_ORM extends Model implements serializable {
 		$wildcards = empty($filters[TRUE]) ? array() : $filters[TRUE];
 
 		// Merge in the wildcards
-		$filters = empty($filters[$column]) ? $wildcards : array_merge($filters[$column], $wildcards);
+		$filters = empty($filters[$field]) ? $wildcards : array_merge($filters[$field], $wildcards);
 
-		// Execute the filters
-		foreach ($filters as $filter => $params)
+		// Bind the field name and model so they can be used in the filter method
+		$_bound = array
+		(
+			':field' => $field,
+			':model' => $this,
+		);
+
+		foreach ($filters as $array)
 		{
-			// $params needs to be array() if NULL was specified
-			$params = (array) $params;
+			// Value needs to be bound inside the loop so we are always using the
+			// version that was modified by the filters that already ran
+			$_bound[':value'] = $value;
 
-			// Add the field value to the parameters
-			array_unshift($params, $value);
+			// Filters are defined as array($filter, $params)
+			$filter = $array[0];
+			$params = Arr::get($array, 1, array(':value'));
 
-			if (strpos($filter, '::') === FALSE)
+			foreach ($params as $key => $param)
+			{
+				if (is_string($param) AND array_key_exists($param, $_bound))
+				{
+					// Replace with bound value
+					$params[$key] = $_bound[$param];
+				}
+			}
+
+			if (is_array($filter) OR ! is_string($filter))
+			{
+				// This is either a callback as an array or a lambda
+				$value = call_user_func_array($filter, $params);
+			}
+			elseif (strpos($filter, '::') === FALSE)
 			{
 				// Use a function call
 				$function = new ReflectionFunction($filter);
 
-				// Call $function($value, $param, ...) with Reflection
+				// Call $function($this[$field], $param, ...) with Reflection
 				$value = $function->invokeArgs($params);
 			}
 			else
@@ -1157,7 +1179,7 @@ class Kohana_ORM extends Model implements serializable {
 				// Use a static method call
 				$method = new ReflectionMethod($class, $method);
 
-				// Call $Class::$method($value, $param, ...) with Reflection
+				// Call $Class::$method($this[$field], $param, ...) with Reflection
 				$value = $method->invokeArgs(NULL, $params);
 			}
 		}
