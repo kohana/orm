@@ -1,8 +1,13 @@
-There will be subpages to this page that have examples.  The following is a sample list, don't feel limited by his, or that these are required.  Items on the list can be combined, split up, removed or added to.
+# Examples
 
-- Simple one table, one class model.  Show CRUD examples.
+- [Simple](examples/simple): Basic, one table model examples.
+- [Validation](examples/validation): Full example of creating a user account and handling validation errors.
+
+## @TODO:
+
+The following is a sample list of examples that might be useful.  Don't feel limited by this list, or consider these required.  Items on the list can be combined, split up, removed or added to.  All contribution are appreciated.
+
 - Examples of changing things like $_table_name, $_labels, with, etc.
-- Example of using validation
 - Example of a one to one relationship.
 - Example of one to many
 - Example of many to many.
