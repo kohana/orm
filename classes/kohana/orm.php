@@ -42,7 +42,6 @@
  * @method ORM limit()
  * @method ORM offset()
  * @method ORM cached()
- * @method integer count_last_query()
  * @method Validation validation()
  *
  * @property string $object_name Name of the model
@@ -79,7 +78,6 @@ class Kohana_ORM extends Model implements serializable {
 		'and_where_close', 'or_where_close', 'distinct', 'select', 'from', 'join', 'on', 'group_by',
 		'having', 'and_having', 'or_having', 'having_open', 'and_having_open', 'or_having_open',
 		'having_close', 'and_having_close', 'or_having_close', 'order_by', 'limit', 'offset', 'cached',
-		'count_last_query'
 	);
 
 	/**
