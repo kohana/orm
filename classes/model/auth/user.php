@@ -41,7 +41,7 @@ class Model_Auth_User extends ORM {
 	public function filters()
 	{
 		return array(
-			'password' => array('Model_User::hash_password' => array()),
+			'password' => array(array('Model_User::hash_password'))
 		);
 	}
 
