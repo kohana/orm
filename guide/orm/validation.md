@@ -2,6 +2,37 @@
 
 ORM models are tightly integrated with the [Validation] library and the module comes with a very flexible [ORM_Validation_Exception] that helps you quickly handle validation errors from basic CRUD operations.
 
+## Defining Rules
+
+Validation rules are defined in the `ORM::rules()` method. This method returns the array of rules to be added to the [Validation] object like so:
+
+	public function rules()
+	{
+		return array(
+			'username' => array(
+				// Uses Valid::not_empty($value);
+				array('not_empty'),
+				// Calls Some_Class::some_method('param1', 'param2');
+				array('Some_Class::some_method', array('param1', 'param2')),
+				// Calls A_Class::a_method($value);
+				array(array('A_Class', 'a_method')),
+				// Calls the lambda function and passes the field value and the validation object
+				array(function($value, Validation $object)
+				{
+					$object->error('some_field', 'some_error');
+				}, array(':value', ':validation')),
+			),
+		);
+	}
+
+### Bound Values
+
+ORM will automatically bind the following values with `Validation::bind()`:
+
+- **:field** - The name of the field the rule is being applied to.
+- **:value** - The value of the field the rule is being applied to.
+- **:model** - The instance of the model that is being validated.
+
 ## Automatic Validation
 
 All models automatically validate their own data when `ORM::save()`, `ORM::update()`, or `ORM::create()` is called. Because of this, you should always expect these methods to throw an [ORM_Validation_Exception] when the model's data is invalid.
