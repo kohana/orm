@@ -9,12 +9,23 @@
  */
 class Model_Auth_User extends ORM {
 
-	// Relationships
+	/**
+	 * A user has many tokens and roles
+	 *
+	 * @var array Relationhips
+	 */
 	protected $_has_many = array(
 		'user_tokens' => array('model' => 'user_token'),
 		'roles'       => array('model' => 'role', 'through' => 'roles_users'),
 	);
 
+	/**
+	 * Rules for the user model. Because the password is _always_ a hash
+	 * there should be no rules for the password field here. The password rules
+	 * should be enforced outside the model or with a model helper method.
+	 *
+	 * @return array Rules
+	 */
 	public function rules()
 	{
 		return array(
@@ -24,9 +35,6 @@ class Model_Auth_User extends ORM {
 				array('max_length', array(':value', 32)),
 				array('regex', array(':value', '/^[-\pL\pN_.]++$/uD')),
 				array(array($this, 'username_available'), array(':validation', ':field')),
-			),
-			'password' => array(
-				array('not_empty'),
 			),
 			'email' => array(
 				array('not_empty'),
@@ -38,24 +46,31 @@ class Model_Auth_User extends ORM {
 		);
 	}
 
+	/**
+	 * Filters to run when data is set in this model. The password filter
+	 * automatically hashes the password when it's set in the model.
+	 *
+	 * @return array Filters
+	 */
 	public function filters()
 	{
 		return array(
-			'password' => array(array('Model_User::hash_password'))
+			'password' => array(
+				array(array(Auth::instance(), 'hash'))
+			)
 		);
 	}
 
-	public static function hash_password($password)
-	{
-		return Auth::instance()->hash($password);
-	}
-
+	/**
+	 * Labels for fields in this model
+	 *
+	 * @return array Labels
+	 */
 	public function labels()
 	{
 		return array(
 			'username'         => 'username',
 			'email'            => 'email address',
-			'password'         => 'password',
 		);
 	}
 
