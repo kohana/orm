@@ -1,4 +1,4 @@
-# Simple example
+# Simple Examples
 
 This is a simple example of a single ORM model, that has no relationships, but uses validation on the fields. 
 
