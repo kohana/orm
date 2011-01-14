@@ -397,7 +397,8 @@ class Kohana_ORM extends Model implements serializable {
 	protected function _validation()
 	{
 		// Build the validation object with its rules
-		$this->_validation = Validation::factory($this->_object);
+		$this->_validation = Validation::factory($this->_object)
+			->bind(':model', $this);
 
 		foreach ($this->rules() as $field => $rules)
 		{
