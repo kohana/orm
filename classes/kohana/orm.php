@@ -244,10 +244,16 @@ class Kohana_ORM extends Model implements serializable {
 	protected $_reload_on_wakeup = TRUE;
 
 	/**
-	 * Database configuration
+	 * Database Object
 	 * @var Database
 	 */
 	protected $_db = NULL;
+
+	/**
+	 * Database config group
+	 * @var String
+	 */
+	protected $_db_group = NULL;
 
 	/**
 	 * Database methods applied
@@ -337,7 +343,7 @@ class Kohana_ORM extends Model implements serializable {
 		if ( ! is_object($this->_db))
 		{
 			// Get database instance
-			$this->_db = Database::instance($this->_db);
+			$this->_db = Database::instance($this->_db_group);
 		}
 
 		if (empty($this->_table_name))
