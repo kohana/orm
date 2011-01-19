@@ -1120,6 +1120,15 @@ class Kohana_ORM {
 	{
 		$selects = array();
 
+		if ( ! empty($this->_load_with))
+		{
+			foreach ($this->_load_with as $alias)
+			{
+				// Bind relationship
+				$this->with($alias);
+			}
+		}
+
 		foreach ($this->_db_pending as $key => $method)
 		{
 			if ($method['name'] == 'select')
