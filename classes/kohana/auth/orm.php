@@ -85,8 +85,7 @@ class Kohana_Auth_ORM extends Auth {
 				$data = array(
 					'user_id'    => $user->id,
 					'expires'    => time() + $this->_config['lifetime'],
-					'user_agent' => Request::$user_agent,
-					'token'      => sha1($user->username.unique_id().time()),
+					'user_agent' => sha1(Request::$user_agent),
 				);
 
 				// Create a new autologin token
