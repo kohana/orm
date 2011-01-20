@@ -21,9 +21,6 @@ class Model_Auth_User_Token extends ORM {
 	{
 		parent::__construct($id);
 
-		// Set the now, we use this a lot
-		$this->_now = time();
-
 		if (mt_rand(1, 100) === 1)
 		{
 			// Do garbage collection
@@ -50,6 +47,24 @@ class Model_Auth_User_Token extends ORM {
 			->execute($this->_db);
 
 		return $this;
+	}
+
+	public function create(Validation $validation = NULL)
+	{
+		$this->token = $this->create_token();
+
+		return parent::create($validation);
+	}
+
+	protected function create_token()
+	{
+		do
+		{
+			$token = sha1(uniqid(Text::random('alnum', 32), TRUE));
+		}
+		while(ORM::factory('user_token', array('token' => $token))->loaded());
+
+		return $token;
 	}
 
 } // End Auth User Token Model
