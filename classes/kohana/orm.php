@@ -1135,7 +1135,7 @@ class Kohana_ORM extends Model implements serializable {
 		$wildcards = empty($filters[TRUE]) ? array() : $filters[TRUE];
 
 		// Merge in the wildcards
-		$filters = empty($filters[$field]) ? $wildcards : array_merge($filters[$field], $wildcards);
+		$filters = empty($filters[$field]) ? $wildcards : array_merge($wildcards, $filters[$field]);
 
 		// Bind the field name and model so they can be used in the filter method
 		$_bound = array
