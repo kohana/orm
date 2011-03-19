@@ -86,7 +86,7 @@ class Kohana_ORM extends Model implements serializable {
 	 */
 	protected static $_properties = array
 	(
-		'object_name', 'object_plural', 'loaded', 'saved', // Object
+		'object_name', 'object_plural', 'loaded', 'saved', 'valid', // Object
 		'primary_key', 'primary_val', 'table_name', 'table_columns', // Table
 		'has_one', 'belongs_to', 'has_many', 'has_many_through', 'load_with', // Relationships
 		'updated_column', 'created_column',
@@ -1216,9 +1216,10 @@ class Kohana_ORM extends Model implements serializable {
 	 * Validates the current model's data
 	 *
 	 * @param  Validation $extra_validation Validation object
+	 * @param  boolean    Should throw exception when invalid?
 	 * @return ORM
 	 */
-	public function check(Validation $extra_validation = NULL)
+	public function check(Validation $extra_validation = NULL, $throw = FALSE)
 	{
 		// Determine if any external validation failed
 		$extra_errors = ($extra_validation AND ! $extra_validation->check());
@@ -1228,7 +1229,7 @@ class Kohana_ORM extends Model implements serializable {
 
 		$array = $this->_validation;
 
-		if (($this->_valid = $array->check()) === FALSE OR $extra_errors)
+		if ((($this->_valid = $array->check()) === FALSE OR $extra_errors) AND $throw)
 		{
 			$exception = new ORM_Validation_Exception($this->_object_name, $array);
 
@@ -1256,7 +1257,7 @@ class Kohana_ORM extends Model implements serializable {
 		// Require model validation before saving
 		if ( ! $this->_valid)
 		{
-			$this->check($validation);
+			$this->check($validation, TRUE);
 		}
 
 		$data = array();
@@ -1316,7 +1317,7 @@ class Kohana_ORM extends Model implements serializable {
 		// Require model validation before saving
 		if ( ! $this->_valid)
 		{
-			$this->check($validation);
+			$this->check($validation, TRUE);
 		}
 
 		$data = array();
