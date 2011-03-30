@@ -12,7 +12,7 @@ class Model_Auth_User extends ORM {
 	/**
 	 * A user has many tokens and roles
 	 *
-	 * @var array Relationhips
+	 * @var array Relationships
 	 */
 	protected $_has_many = array(
 		'user_tokens' => array('model' => 'user_token'),
