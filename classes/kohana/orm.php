@@ -1561,27 +1561,21 @@ class Kohana_ORM extends Model implements serializable {
 	{
 		if ($type === NULL)
 		{
+			// Return an array of all relationships.
 			return array(
 				'has_one' => $this->_has_one,
 				'has_many' => $this->_has_many,
 				'belongs_to' => $this->_belongs_to,
 			);
 		}
-		switch ($type)
+
+		if (in_array($type, array('has_one', 'has_many', 'belongs_to')))
 		{
-			case 'has_one':
-				return $this->_has_one;
-			break;
-			case 'has_many':
-				return $this->_has_many;
-			break;
-			case 'belongs_to':
-				return $this->_belongs_to;
-			break;
-			default:
-				throw new Kohana_Exception('Invalid relationship type.');
-			break;
+			// Return only the relationships of specified type.
+			return $this->{"_{$type}"};
 		}
+		else
+			throw new Kohana_Exception('Invalid relationship type.');
 	}
 
 	/**
