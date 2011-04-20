@@ -43,11 +43,11 @@
  * @method ORM offset()
  * @method ORM cached()
  * @method Validation validation()
+ * @method bool loaded() ORM object was loaded from Database?
+ * @method bool saved() ORM object was saved?
  *
  * @property string $object_name Name of the model
  * @property string $object_plural Plural name of the model
- * @property bool $loaded ORM object was loaded?
- * @property bool $saved ORM object was saved?
  * @property mixed $primary_key
  * @property mixed $primary_val
  * @property string $table_name
