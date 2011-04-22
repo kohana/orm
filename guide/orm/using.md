@@ -39,6 +39,8 @@ To find an object you can call the [ORM::find] method or pass the id into the OR
 	// Or
 	$user = ORM::factory('user', 20);
 
+If a non-existing ID is used, the model's primary key will be cleared, and therefor not used with saving.
+
 ## Check that ORM loaded a record
 
 Use the [ORM::loaded] method to check that ORM successfully loaded a record.
