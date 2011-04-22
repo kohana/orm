@@ -7,3 +7,4 @@
 - [Examples](examples)
     - [Simple](examples/simple)
     - [Validation](examples/validation)
+    - [One-to-one relations](examples/one_to_one)
