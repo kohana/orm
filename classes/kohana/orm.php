@@ -1552,23 +1552,6 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Proxy method to Database field_data.
-	 *
-	 * @chainable
-	 * @param  string $sql SQL query to clear
-	 * @return ORM
-	 */
-	public function clear_cache($sql = NULL)
-	{
-		// Proxy to database
-		$this->_db->clear_cache($sql);
-
-		ORM::$_column_cache = array();
-
-		return $this;
-	}
-
-	/**
 	 * Returns an ORM model for the given one-one related alias
 	 *
 	 * @param  string $alias Alias name
