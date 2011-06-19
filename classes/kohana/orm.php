@@ -1370,6 +1370,25 @@ class Kohana_ORM extends Model implements serializable {
 	{
 		return $this->loaded() ? $this->update($validation) : $this->create($validation);
 	}
+	
+	/**
+	 * Set records fields automatically from array
+	 *
+	 * @chainable	 
+	 * @param   array    Fields and data (Ex. array('id' = 1))
+	 * @return  ORM
+	 */
+  public function set_values(array $values)
+  {
+        
+    foreach ($values as $k => $value)
+    {
+      if (array_key_exists($k, $this->_table_columns))
+        $this->{$k} = $value;
+    }
+           
+    return $this;        
+  }        
 
 	/**
 	 * Deletes a single record or multiple records, ignoring relationships.
@@ -1549,23 +1568,6 @@ class Kohana_ORM extends Model implements serializable {
 	{
 		// Proxy to database
 		return $this->_db->list_columns($this->_table_name);
-	}
-
-	/**
-	 * Proxy method to Database field_data.
-	 *
-	 * @chainable
-	 * @param  string $sql SQL query to clear
-	 * @return ORM
-	 */
-	public function clear_cache($sql = NULL)
-	{
-		// Proxy to database
-		$this->_db->clear_cache($sql);
-
-		ORM::$_column_cache = array();
-
-		return $this;
 	}
 
 	/**
