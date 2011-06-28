@@ -314,7 +314,7 @@ class Kohana_ORM extends Model implements serializable {
 			else
 			{
 				// Passing the primary key
-				$this->where($this->_table_name.'.'.$this->_primary_key, '=', $id)->find();
+				$this->where($this->_object_name.'.'.$this->_primary_key, '=', $id)->find();
 			}
 		}
 		elseif ( ! empty($this->_cast_data))
@@ -487,7 +487,7 @@ class Kohana_ORM extends Model implements serializable {
 		// Only reload the object if we have one to reload
 		if ($this->_loaded)
 			return $this->clear()
-				->where($this->_table_name.'.'.$this->_primary_key, '=', $primary_key)
+				->where($this->_object_name.'.'.$this->_primary_key, '=', $primary_key)
 				->find();
 		else
 			return $this->clear();
@@ -630,7 +630,7 @@ class Kohana_ORM extends Model implements serializable {
 			$model = $this->_related($column);
 
 			// Use this model's column and foreign model's primary key
-			$col = $model->_table_name.'.'.$model->_primary_key;
+			$col = $model->_object_name.'.'.$model->_primary_key;
 			$val = $this->_object[$this->_belongs_to[$column]['foreign_key']];
 
 			$model->where($col, '=', $val)->find();
@@ -642,7 +642,7 @@ class Kohana_ORM extends Model implements serializable {
 			$model = $this->_related($column);
 
 			// Use this model's primary key value and foreign model's column
-			$col = $model->_table_name.'.'.$this->_has_one[$column]['foreign_key'];
+			$col = $model->_object_name.'.'.$this->_has_one[$column]['foreign_key'];
 			$val = $this->pk();
 
 			$model->where($col, '=', $val)->find();
@@ -660,7 +660,7 @@ class Kohana_ORM extends Model implements serializable {
 
 				// Join on through model's target foreign key (far_key) and target model's primary key
 				$join_col1 = $through.'.'.$this->_has_many[$column]['far_key'];
-				$join_col2 = $model->_table_name.'.'.$model->_primary_key;
+				$join_col2 = $model->_object_name.'.'.$model->_primary_key;
 
 				$model->join($through)->on($join_col1, '=', $join_col2);
 
@@ -671,7 +671,7 @@ class Kohana_ORM extends Model implements serializable {
 			else
 			{
 				// Simple has_many relationship, search where target model's foreign key is this model's primary key
-				$col = $model->_table_name.'.'.$this->_has_many[$column]['foreign_key'];
+				$col = $model->_object_name.'.'.$this->_has_many[$column]['foreign_key'];
 				$val = $this->pk();
 			}
 
@@ -860,7 +860,7 @@ class Kohana_ORM extends Model implements serializable {
 		if (empty($parent_path))
 		{
 			// Use this table name itself for the parent path
-			$parent_path = $this->_table_name;
+			$parent_path = $this->_object_name;
 		}
 		else
 		{
@@ -918,10 +918,10 @@ class Kohana_ORM extends Model implements serializable {
 				$this->_db_builder = DB::select();
 			break;
 			case Database::UPDATE:
-				$this->_db_builder = DB::update($this->_table_name);
+				$this->_db_builder = DB::update(array($this->_table_name, $this->_object_name));
 			break;
 			case Database::DELETE:
-				$this->_db_builder = DB::delete($this->_table_name);
+				$this->_db_builder = DB::delete(array($this->_table_name, $this->_object_name));
 		}
 
 		// Process pending database method calls
@@ -997,7 +997,7 @@ class Kohana_ORM extends Model implements serializable {
 	 */
 	protected function _load_result($multiple = FALSE)
 	{
-		$this->_db_builder->from($this->_table_name);
+		$this->_db_builder->from(array($this->_table_name, $this->_object_name));
 
 		if ($multiple === FALSE)
 		{
@@ -1006,7 +1006,7 @@ class Kohana_ORM extends Model implements serializable {
 		}
 
 		// Select all columns by default
-		$this->_db_builder->select($this->_table_name.'.*');
+		$this->_db_builder->select($this->_object_name.'.*');
 
 		if ( ! isset($this->_db_applied['order_by']) AND ! empty($this->_sorting))
 		{
@@ -1015,7 +1015,7 @@ class Kohana_ORM extends Model implements serializable {
 				if (strpos($column, '.') === FALSE)
 				{
 					// Sorting column for use in JOINs
-					$column = $this->_table_name.'.'.$column;
+					$column = $this->_object_name.'.'.$column;
 				}
 
 				$this->_db_builder->order_by($column, $direction);
@@ -1526,7 +1526,7 @@ class Kohana_ORM extends Model implements serializable {
 
 		$this->_build(Database::SELECT);
 
-		$records = $this->_db_builder->from($this->_table_name)
+		$records = $this->_db_builder->from(array($this->_table_name, $this->_object_name))
 			->select(array('COUNT("*")', 'records_found'))
 			->execute($this->_db)
 			->get('records_found');
