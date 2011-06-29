@@ -225,6 +225,12 @@ class Kohana_ORM extends Model implements serializable {
 	protected $_created_column = NULL;
 
 	/**
+	 * Auto-serialize and unserialize columns on get/set
+	 * @var array
+	 */
+	protected $_serialize_columns = array();
+
+	/**
 	 * Table primary key
 	 * @var string
 	 */
@@ -647,7 +653,9 @@ class Kohana_ORM extends Model implements serializable {
 	{
 		if (array_key_exists($column, $this->_object))
 		{
-			return $this->_object[$column];
+			return (in_array($column, $this->_serialize_columns))
+				? $this->_unserialize_value($this->_object[$column])
+				: $this->_object[$column];
 		}
 		elseif (isset($this->_related[$column]))
 		{
@@ -743,6 +751,11 @@ class Kohana_ORM extends Model implements serializable {
 	 */
 	public function set($column, $value)
 	{
+		if (in_array($column, $this->_serialize_columns))
+		{
+			$value = $this->_serialize_value($value);
+		}
+
 		if (array_key_exists($column, $this->_object))
 		{
 			// Filter the data
@@ -1653,5 +1666,15 @@ class Kohana_ORM extends Model implements serializable {
 		$this->_db_reset = $next;
 
 		return $this;
+	}
+
+	protected function _serialize_value($value)
+	{
+		return json_encode($value);
+	}
+
+	protected function _unserialize_value($value)
+	{
+		return json_decode($value);
 	}
 } // End ORM
