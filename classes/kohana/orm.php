@@ -86,7 +86,7 @@ class Kohana_ORM extends Model implements serializable {
 	 */
 	protected static $_properties = array
 	(
-		'object_name', 'object_plural', 'loaded', 'saved', 'changed', // Object
+		'object_name', 'object_plural', 'loaded', 'saved', // Object
 		'primary_key', 'primary_val', 'table_name', 'table_columns', // Table
 		'has_one', 'belongs_to', 'has_many', 'has_many_through', 'load_with', // Relationships
 		'updated_column', 'created_column',
@@ -545,6 +545,20 @@ class Kohana_ORM extends Model implements serializable {
 		}
 
 		return serialize($data);
+	}
+
+	/**
+	 * Check whether the model data has been modified.
+	 * If $field is specified, checks whether that field was modified.
+	 *
+	 * @param string  field to check for changes
+	 * @return  bool  Whether or not the field has changed
+	 */
+	public function changed($field = NULL)
+	{
+		return ($field === NULL)
+			? $this->_changed
+			: Arr::get($this->_changed, $field);
 	}
 
 	/**
