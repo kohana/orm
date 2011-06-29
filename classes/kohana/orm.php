@@ -1451,13 +1451,23 @@ class Kohana_ORM extends Model implements serializable {
 	 *     $model->has('roles', 5);
 	 *     // Check for all of the following roles
 	 *     $model->has('roles', array(1, 2, 3, 4));
-
+	 *     // Check if $model has any roles
+	 *     $model->has('roles')
+	 *
 	 * @param  string  $alias    Alias of the has_many "through" relationship
 	 * @param  mixed   $far_keys Related model, primary key, or an array of primary keys
 	 * @return Database_Result
 	 */
-	public function has($alias, $far_keys)
+	public function has($alias, $far_keys = NULL)
 	{
+		if ($far_keys === NULL)
+		{
+			return (bool) DB::select(array('COUNT("*")', 'records_found'))
+				->from($this->_has_many[$alias]['through'])
+				->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk())
+				->execute($this->_db)->get('records_found');
+		}
+
 		$far_keys = ($far_keys instanceof ORM) ? $far_keys->pk() : $far_keys;
 
 		// We need an array to simplify the logic
