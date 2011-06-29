@@ -44,22 +44,21 @@
  * @method ORM cached()
  * @method Validation validation()
  * @method Array object()
- *
- * @property string $object_name Name of the model
- * @property string $object_plural Plural name of the model
- * @property bool $loaded ORM object was loaded?
- * @property bool $saved ORM object was saved?
- * @property mixed $primary_key
- * @property mixed $primary_val
- * @property string $table_name
- * @property string $table_columns
- * @property array $has_one
- * @property array $belongs_to
- * @property array $has_many
- * @property array $has_many_through
- * @property array $load_with
- * @property string $updated_column
- * @property string $created_column
+ * @method string $object_name Name of the model
+ * @method string $object_plural Plural name of the model
+ * @method bool $loaded ORM object was loaded?
+ * @method bool $saved ORM object was saved?
+ * @method mixed $primary_key
+ * @method mixed $primary_val
+ * @method string $table_name
+ * @method string $table_columns
+ * @method array $has_one
+ * @method array $belongs_to
+ * @method array $has_many
+ * @method array $has_many_through
+ * @method array $load_with
+ * @method string $updated_column
+ * @method string $created_column
  */
 class Kohana_ORM extends Model implements serializable {
 
