@@ -43,6 +43,7 @@
  * @method ORM offset()
  * @method ORM cached()
  * @method Validation validation()
+ * @method Array object()
  *
  * @property string $object_name Name of the model
  * @property string $object_plural Plural name of the model
@@ -91,6 +92,7 @@ class Kohana_ORM extends Model implements serializable {
 		'has_one', 'belongs_to', 'has_many', 'has_many_through', 'load_with', // Relationships
 		'updated_column', 'created_column',
 		'validation',
+		'object',
 	);
 
 	/**
