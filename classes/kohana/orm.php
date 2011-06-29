@@ -86,7 +86,7 @@ class Kohana_ORM extends Model implements serializable {
 	 */
 	protected static $_properties = array
 	(
-		'object_name', 'object_plural', 'loaded', 'saved', // Object
+		'object_name', 'object_plural', 'loaded', 'saved', 'changed', // Object
 		'primary_key', 'primary_val', 'table_name', 'table_columns', // Table
 		'has_one', 'belongs_to', 'has_many', 'has_many_through', 'load_with', // Relationships
 		'updated_column', 'created_column',
@@ -1067,16 +1067,16 @@ class Kohana_ORM extends Model implements serializable {
 		{
 			if ($values[$this->_primary_key] !== NULL)
 			{
-				// Flag as loaded, saved, and valid
-				$this->_loaded = $this->_saved = $this->_valid = TRUE;
+				// Flag as loaded and valid
+				$this->_loaded = $this->_valid = TRUE;
 
 				// Store primary key
 				$this->_primary_key_value = $values[$this->_primary_key];
 			}
 			else
 			{
-				// Not loaded, saved, or valid
-				$this->_loaded = $this->_saved = $this->_valid = FALSE;
+				// Not loaded or valid
+				$this->_loaded = $this->_valid = FALSE;
 			}
 		}
 
