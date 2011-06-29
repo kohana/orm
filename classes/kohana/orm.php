@@ -89,6 +89,7 @@ class Kohana_ORM extends Model implements serializable {
 		'object_name', 'object_plural', 'loaded', 'saved', // Object
 		'primary_key', 'primary_val', 'table_name', 'table_columns', // Table
 		'has_one', 'belongs_to', 'has_many', 'has_many_through', 'load_with', // Relationships
+		'original_values',
 		'updated_column', 'created_column',
 		'validation',
 		'object',
@@ -150,6 +151,11 @@ class Kohana_ORM extends Model implements serializable {
 	 * @var array
 	 */
 	protected $_changed = array();
+
+	/**
+	 * @var array
+	 */
+	protected $_original_values = array();
 
 	/**
 	 * @var array
@@ -459,7 +465,7 @@ class Kohana_ORM extends Model implements serializable {
 		$values = array_combine(array_keys($this->_table_columns), array_fill(0, count($this->_table_columns), NULL));
 
 		// Replace the object and reset the object status
-		$this->_object = $this->_changed = $this->_related = array();
+		$this->_object = $this->_changed = $this->_related = $this->_original_values = array();
 
 		// Replace the current object with an empty one
 		$this->_load_values($values);
@@ -483,7 +489,7 @@ class Kohana_ORM extends Model implements serializable {
 		$primary_key = $this->pk();
 
 		// Replace the object and reset the object status
-		$this->_object = $this->_changed = $this->_related = array();
+		$this->_object = $this->_changed = $this->_related = $this->_original_values = array();
 
 		// Only reload the object if we have one to reload
 		if ($this->_loaded)
@@ -517,6 +523,12 @@ class Kohana_ORM extends Model implements serializable {
 	 */
 	public function __unset($column)
 	{
+		if ($this->loaded() AND ! array_key_exists($column, $this->_original_values))
+		{
+			// Store the original for validation purposes
+			$this->_original_values[$column] = $this->_object[$column];
+		}
+
 		unset($this->_object[$column], $this->_changed[$column], $this->_related[$column]);
 	}
 
@@ -539,7 +551,7 @@ class Kohana_ORM extends Model implements serializable {
 	public function serialize()
 	{
 		// Store only information about the object
-		foreach (array('_primary_key_value', '_object', '_changed', '_loaded', '_saved', '_sorting') as $var)
+		foreach (array('_primary_key_value', '_object', '_changed', '_loaded', '_saved', '_sorting', '_original_values') as $var)
 		{
 			$data[$var] = $this->{$var};
 		}
@@ -737,6 +749,12 @@ class Kohana_ORM extends Model implements serializable {
 			// See if the data really changed
 			if ($value !== $this->_object[$column])
 			{
+				if ( ! array_key_exists($column, $this->_original_values))
+				{
+					// Store the original for validation purposes
+					$this->_original_values[$column] = $this->_object[$column];
+				}
+
 				$this->_object[$column] = $value;
 
 				// Data has changed
@@ -1305,7 +1323,7 @@ class Kohana_ORM extends Model implements serializable {
 		$this->_loaded = $this->_saved = TRUE;
 
 		// All changes have been saved
-		$this->_changed = array();
+		$this->_changed = $this->_original_values = array();
 
 		return $this;
 	}
@@ -1369,7 +1387,7 @@ class Kohana_ORM extends Model implements serializable {
 		$this->_saved = TRUE;
 
 		// All changes have been saved
-		$this->_changed = array();
+		$this->_changed = $this->_original_values = array();
 
 		return $this;
 	}
