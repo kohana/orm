@@ -166,7 +166,6 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 					$file = trim($directory.'/'.$alias, '/');
 				}
 
-				echo Debug::vars($file);
 				// Merge in this array of errors
 				$errors += $object->errors($file, $translate);
 			}
