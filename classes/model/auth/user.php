@@ -43,7 +43,6 @@ class Model_Auth_User extends ORM {
 			'email' => array(
 				array('not_empty'),
 				array('min_length', array(':value', 4)),
-				array('max_length', array(':value', 127)),
 				array('email'),
 				array(array($this, 'email_available'), array(':validation', ':field')),
 			),
