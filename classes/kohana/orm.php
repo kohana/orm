@@ -229,6 +229,13 @@ class Kohana_ORM extends Model implements serializable {
 	protected $_cast_data = array();
 
 	/**
+	 * The message filename used for validation errors.
+	 * Defaults to ORM::$_object_name
+	 * @var string
+	 */
+	protected $_errors_filename = NULL;
+
+	/**
 	 * Constructs a new model and loads a record if given
 	 *
 	 * @param   mixed $id Parameter for find or object to load
@@ -276,6 +283,11 @@ class Kohana_ORM extends Model implements serializable {
 		// Set the object name and plural name
 		$this->_object_name = strtolower(substr(get_class($this), 6));
 		$this->_object_plural = Inflector::plural($this->_object_name);
+
+		if ( ! $this->_errors_filename)
+		{
+			$this->_errors_filename = $this->_object_name;
+		}
 
 		if ( ! is_object($this->_db))
 		{
@@ -1165,7 +1177,7 @@ class Kohana_ORM extends Model implements serializable {
 
 		if (($this->_valid = $array->check()) === FALSE OR $extra_errors)
 		{
-			$exception = new ORM_Validation_Exception($this->_object_name, $array);
+			$exception = new ORM_Validation_Exception($this->errors_filename(), $array);
 
 			if ($extra_errors)
 			{
@@ -1664,6 +1676,11 @@ class Kohana_ORM extends Model implements serializable {
 	public function object()
 	{
 		return $this->_object;
+	}
+
+	public function errors_filename()
+	{
+		return $this->_errors_filename;
 	}
 
 	/**

@@ -16,24 +16,24 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 	protected $_objects = array();
 
 	/**
-   * The _object_name property of the main ORM model this exception was created for
+   * The alias of the main ORM model this exception was created for
    * @var string
    */
-	protected $_object_name = NULL;
+	protected $_alias = NULL;
 
 	/**
 	 * Constructs a new exception for the specified model
 	 *
-	 * @param  string     $object_name The _object_name of the model this exception is for
+	 * @param  string     $alias       The alias to use when looking for error messages
 	 * @param  Validation $object      The Validation object of the model
 	 * @param  string     $message     The error message
 	 * @param  array      $values      The array of values for the error message
 	 * @param  integer    $code        The error code for the exception
 	 * @return void
 	 */
-	public function __construct($object_name, Validation $object, $message = 'Failed to validate array', array $values = NULL, $code = 0)
+	public function __construct($alias, Validation $object, $message = 'Failed to validate array', array $values = NULL, $code = 0)
 	{
-		$this->_object_name = $object_name;
+		$this->_alias = $alias;
 		$this->_objects['_object'] = $object;
 
 		parent::__construct($message, $values, $code);
@@ -125,7 +125,7 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 		if ($directory !== NULL)
 		{
 			// Everything starts at $directory/$object_name
-			$directory .= '/'.$this->_object_name;
+			$directory .= '/'.$this->_alias;
 		}
 
 		return $this->generate_errors($this->_objects, $directory, $translate);
