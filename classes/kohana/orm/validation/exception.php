@@ -35,6 +35,7 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 	{
 		$this->_alias = $alias;
 		$this->_objects['_object'] = $object;
+		$this->_objects['_has_many'] = FALSE;
 
 		parent::__construct($message, $values, $code);
 	}
@@ -62,6 +63,9 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 	 */
 	public function add_object($alias, Validation $object, $has_many = FALSE)
 	{
+		// We will need this when generating errors
+		$this->_objects[$alias]['_has_many'] = ($has_many !== FALSE);
+
 		if ($has_many === TRUE)
 		{
 			// This is most likely a has_many relationship
@@ -91,6 +95,9 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 	 */
 	public function merge($alias, ORM_Validation_Exception $object, $has_many = FALSE)
 	{
+		// We will need this when generating errors
+		$this->_objects[$alias]['_has_many'] = ($has_many !== FALSE);
+
 		if ($has_many === TRUE)
 		{
 			// This is most likely a has_many relationship
@@ -122,48 +129,46 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 	 */
 	public function errors($directory = NULL, $translate = TRUE)
 	{
-		if ($directory !== NULL)
-		{
-			// Everything starts at $directory/$object_name
-			$directory .= '/'.$this->_alias;
-		}
-
-		return $this->generate_errors($this->_objects, $directory, $translate);
+		return $this->generate_errors($this->_alias, $this->_objects, $directory, $translate);
 	}
 
 	/**
 	 * Recursive method to fetch all the errors in this exception
 	 *
+	 * @param  string $alias     Alias to use for messages file
 	 * @param  array  $array     Array of Validation objects to get errors from
 	 * @param  string $directory Directory to load error messages from
 	 * @param  mixed  $translate Translate the message
 	 * @return array
 	 */
-	protected function generate_errors(array $array, $directory, $translate)
+	protected function generate_errors($alias, array $array, $directory, $translate)
 	{
 		$errors = array();
 
-		foreach ($array as $alias => $object)
+		foreach ($array as $key => $object)
 		{
-			if ($directory === NULL)
-			{
-				// Return the raw errors
-				$file = NULL;
-			}
-			else
-			{
-				$file = trim($directory.'/'.$alias, '/');
-			}
-
 			if (is_array($object))
 			{
+				$sub_alias = $array['_has_many'] ? $alias : $key;
+
 				// Recursively fill the errors array
-				$errors[$alias] = $this->generate_errors($object, $file, $translate);
+				$errors[$alias] = $this->generate_errors($sub_alias, $object, $directory, $translate);
 			}
-			else
+			elseif ($object instanceof Validation)
 			{
+				if ($directory === NULL)
+				{
+					// Return the raw errors
+					$file = NULL;
+				}
+				else
+				{
+					$file = trim($directory.'/'.$alias, '/');
+				}
+
+				echo Debug::vars($file);
 				// Merge in this array of errors
-				$errors += $object->errors($directory, $translate);
+				$errors += $object->errors($file, $translate);
 			}
 		}
 
