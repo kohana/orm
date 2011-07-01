@@ -12,53 +12,6 @@
  * @author     Kohana Team
  * @copyright  (c) 2007-2010 Kohana Team
  * @license    http://kohanaframework.org/license
- *
- *
- * @method ORM where()
- * @method ORM and_where()
- * @method ORM or_where()
- * @method ORM where_open()
- * @method ORM and_where_open()
- * @method ORM or_where_open()
- * @method ORM where_close()
- * @method ORM and_where_close()
- * @method ORM or_where_close()
- * @method ORM distinct()
- * @method ORM select()
- * @method ORM from()
- * @method ORM join()
- * @method ORM on()
- * @method ORM group_by()
- * @method ORM having()
- * @method ORM and_having()
- * @method ORM or_having()
- * @method ORM having_open()
- * @method ORM and_having_open()
- * @method ORM or_having_open()
- * @method ORM having_close()
- * @method ORM and_having_close()
- * @method ORM or_having_close()
- * @method ORM order_by()
- * @method ORM limit()
- * @method ORM offset()
- * @method ORM cached()
- * @method Validation validation()
- * @method Array object()
- * @method string object_name() Name of the model
- * @method string object_plural() Plural name of the model
- * @method bool loaded() ORM object was loaded?
- * @method bool saved() ORM object was saved?
- * @method mixed primary_key()
- * @method mixed primary_val()
- * @method string table_name()
- * @method string table_columns()
- * @method array has_one()
- * @method array belongs_to()
- * @method array has_many()
- * @method array has_many_through()
- * @method array load_with()
- * @method string pdated_column()
- * @method string created_column()
  */
 class Kohana_ORM extends Model implements serializable {
 
@@ -67,33 +20,6 @@ class Kohana_ORM extends Model implements serializable {
 	 * @var array
 	 */
 	protected static $_column_cache = array();
-
-	/**
-	 * Callable database methods
-	 * @var array
-	 */
-	protected static $_db_methods = array
-	(
-		'where', 'and_where', 'or_where', 'where_open', 'and_where_open', 'or_where_open', 'where_close',
-		'and_where_close', 'or_where_close', 'distinct', 'select', 'from', 'join', 'on', 'group_by',
-		'having', 'and_having', 'or_having', 'having_open', 'and_having_open', 'or_having_open',
-		'having_close', 'and_having_close', 'or_having_close', 'order_by', 'limit', 'offset', 'cached',
-	);
-
-	/**
-	 * Members that have access methods
-	 * @var array
-	 */
-	protected static $_properties = array
-	(
-		'object_name', 'object_plural', 'loaded', 'saved', // Object
-		'primary_key', 'primary_val', 'table_name', 'table_columns', // Table
-		'has_one', 'belongs_to', 'has_many', 'has_many_through', 'load_with', // Relationships
-		'original_values',
-		'updated_column', 'created_column',
-		'validation',
-		'object',
-	);
 
 	/**
 	 * Creates and returns a new model.
@@ -601,45 +527,6 @@ class Kohana_ORM extends Model implements serializable {
 		{
 			// Reload the object
 			$this->reload();
-		}
-	}
-
-	/**
-	 * Handles pass-through to database methods. Calls to query methods
-	 * (query, get, insert, update) are not allowed. Query builder methods
-	 * are chainable.
-	 *
-	 * @param   string  $method Method name
-	 * @param   array   $args   Method arguments
-	 * @return  mixed
-	 */
-	public function __call($method, array $args)
-	{
-		if (in_array($method, ORM::$_properties))
-		{
-			if ($method === 'validation')
-			{
-				if ( ! isset($this->_validation))
-				{
-					// Initialize the validation object
-					$this->_validation();
-				}
-			}
-
-			// Return the property
-			return $this->{'_'.$method};
-		}
-		elseif (in_array($method, ORM::$_db_methods))
-		{
-			// Add pending database call which is executed after query type is determined
-			$this->_db_pending[] = array('name' => $method, 'args' => $args);
-
-			return $this;
-		}
-		else
-		{
-			throw new Kohana_Exception('Invalid method :method called in :class',
-				array(':method' => $method, ':class' => get_class($this)));
 		}
 	}
 
@@ -1686,5 +1573,556 @@ class Kohana_ORM extends Model implements serializable {
 	protected function _unserialize_value($value)
 	{
 		return json_decode($value);
+	}
+
+	public function object_name()
+	{
+		return $this->_object_name;
+	}
+
+	public function object_plural()
+	{
+		return $this->_object_plural;
+	}
+
+	public function loaded()
+	{
+		return $this->_loaded;
+	}
+
+	public function saved()
+	{
+		return $this->_saved;
+	}
+
+	public function primary_key()
+	{
+		return $this->_primary_key;
+	}
+
+	public function primary_val()
+	{
+		return $this->_primary_val();
+	}
+
+	public function table_name()
+	{
+		return $this->_table_name;
+	}
+
+	public function table_columns()
+	{
+		return $this->_table_columns;
+	}
+
+	public function has_one()
+	{
+		return $this->_has_one;
+	}
+
+	public function belongs_to()
+	{
+		return $this->_belongs_to;
+	}
+
+	public function has_many()
+	{
+		return $this->_has_many;
+	}
+
+	public function load_with()
+	{
+		return $this->_load_with;
+	}
+
+	public function original_values()
+	{
+		return $this->_original_values;
+	}
+
+	public function created_column()
+	{
+		return $this->_created_column;
+	}
+
+	public function updated_column()
+	{
+		return $this->_updated_column;
+	}
+
+	public function validation()
+	{
+		if ( ! isset($this->_validation))
+		{
+			// Initialize the validation object
+			$this->_validation();
+		}
+
+		return $this->_validation;
+	}
+
+	public function object()
+	{
+		return $this->_object;
+	}
+
+	/**
+	 * Alias of and_where()
+	 *
+	 * @param   mixed   column name or array($column, $alias) or object
+	 * @param   string  logic operator
+	 * @param   mixed   column value
+	 * @return  $this
+	 */
+	public function where($column, $op, $value)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'where',
+			'args' => array($column, $op, $value),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Creates a new "AND WHERE" condition for the query.
+	 *
+	 * @param   mixed   column name or array($column, $alias) or object
+	 * @param   string  logic operator
+	 * @param   mixed   column value
+	 * @return  $this
+	 */
+	public function and_where($column, $op, $value)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'and_where',
+			'args' => array($column, $op, $value),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Creates a new "OR WHERE" condition for the query.
+	 *
+	 * @param   mixed   column name or array($column, $alias) or object
+	 * @param   string  logic operator
+	 * @param   mixed   column value
+	 * @return  $this
+	 */
+	public function or_where($column, $op, $value)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'or_where',
+			'args' => array($column, $op, $value),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Alias of and_where_open()
+	 *
+	 * @return  $this
+	 */
+	public function where_open()
+	{
+		return $this->and_where_open();
+	}
+
+	/**
+	 * Opens a new "AND WHERE (...)" grouping.
+	 *
+	 * @return  $this
+	 */
+	public function and_where_open()
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'and_where_open',
+			'args' => array(),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Opens a new "OR WHERE (...)" grouping.
+	 *
+	 * @return  $this
+	 */
+	public function or_where_open()
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'or_where_open',
+			'args' => array(),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Closes an open "AND WHERE (...)" grouping.
+	 *
+	 * @return  $this
+	 */
+	public function where_close()
+	{
+		return $this->and_where_close();
+	}
+
+	/**
+	 * Closes an open "AND WHERE (...)" grouping.
+	 *
+	 * @return  $this
+	 */
+	public function and_where_close()
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'and_where_close',
+			'args' => array(),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Closes an open "OR WHERE (...)" grouping.
+	 *
+	 * @return  $this
+	 */
+	public function or_where_close()
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'or_where_close',
+			'args' => array(),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Applies sorting with "ORDER BY ..."
+	 *
+	 * @param   mixed   column name or array($column, $alias) or object
+	 * @param   string  direction of sorting
+	 * @return  $this
+	 */
+	public function order_by($column, $direction = NULL)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'order_by',
+			'args' => array($column, $direction),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Return up to "LIMIT ..." results
+	 *
+	 * @param   integer  maximum results to return
+	 * @return  $this
+	 */
+	public function limit($number)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'limit',
+			'args' => array($number),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Enables or disables selecting only unique columns using "SELECT DISTINCT"
+	 *
+	 * @param   boolean  enable or disable distinct columns
+	 * @return  $this
+	 */
+	public function distinct($value)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'distinct',
+			'args' => array($value),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Choose the columns to select from.
+	 *
+	 * @param   mixed  column name or array($column, $alias) or object
+	 * @param   ...
+	 * @return  $this
+	 */
+	public function select($columns = NULL)
+	{
+		$columns = func_get_args();
+
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'select',
+			'args' => array($columns),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Choose the tables to select "FROM ..."
+	 *
+	 * @param   mixed  table name or array($table, $alias) or object
+	 * @param   ...
+	 * @return  $this
+	 */
+	public function from($tables)
+	{
+		$tables = func_get_args();
+
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'from',
+			'args' => array($tables),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Adds addition tables to "JOIN ...".
+	 *
+	 * @param   mixed   column name or array($column, $alias) or object
+	 * @param   string  join type (LEFT, RIGHT, INNER, etc)
+	 * @return  $this
+	 */
+	public function join($table, $type = NULL)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'join',
+			'args' => array($table, $type),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Adds "ON ..." conditions for the last created JOIN statement.
+	 *
+	 * @param   mixed   column name or array($column, $alias) or object
+	 * @param   string  logic operator
+	 * @param   mixed   column name or array($column, $alias) or object
+	 * @return  $this
+	 */
+	public function on($c1, $op, $c2)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'on',
+			'args' => array($c1, $op, $c2),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Creates a "GROUP BY ..." filter.
+	 *
+	 * @param   mixed   column name or array($column, $alias) or object
+	 * @param   ...
+	 * @return  $this
+	 */
+	public function group_by($columns)
+	{
+		$columns = func_get_args();
+
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'group_by',
+			'args' => array($columns),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Alias of and_having()
+	 *
+	 * @param   mixed   column name or array($column, $alias) or object
+	 * @param   string  logic operator
+	 * @param   mixed   column value
+	 * @return  $this
+	 */
+	public function having($column, $op, $value = NULL)
+	{
+		return $this->and_having($column, $op, $value);
+	}
+
+	/**
+	 * Creates a new "AND HAVING" condition for the query.
+	 *
+	 * @param   mixed   column name or array($column, $alias) or object
+	 * @param   string  logic operator
+	 * @param   mixed   column value
+	 * @return  $this
+	 */
+	public function and_having($column, $op, $value = NULL)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'and_having',
+			'args' => array($column, $op, $value),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Creates a new "OR HAVING" condition for the query.
+	 *
+	 * @param   mixed   column name or array($column, $alias) or object
+	 * @param   string  logic operator
+	 * @param   mixed   column value
+	 * @return  $this
+	 */
+	public function or_having($column, $op, $value = NULL)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'or_having',
+			'args' => array($column, $op, $value),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Alias of and_having_open()
+	 *
+	 * @return  $this
+	 */
+	public function having_open()
+	{
+		return $this->and_having_open();
+	}
+
+	/**
+	 * Opens a new "AND HAVING (...)" grouping.
+	 *
+	 * @return  $this
+	 */
+	public function and_having_open()
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'and_having_open',
+			'args' => array(),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Opens a new "OR HAVING (...)" grouping.
+	 *
+	 * @return  $this
+	 */
+	public function or_having_open()
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'or_having_open',
+			'args' => array(),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Closes an open "AND HAVING (...)" grouping.
+	 *
+	 * @return  $this
+	 */
+	public function having_close()
+	{
+		return $this->and_having_close();
+	}
+
+	/**
+	 * Closes an open "AND HAVING (...)" grouping.
+	 *
+	 * @return  $this
+	 */
+	public function and_having_close()
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'and_having_close',
+			'args' => array(),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Closes an open "OR HAVING (...)" grouping.
+	 *
+	 * @return  $this
+	 */
+	public function or_having_close()
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'or_having_close',
+			'args' => array(),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Start returning results after "OFFSET ..."
+	 *
+	 * @param   integer   starting result number
+	 * @return  $this
+	 */
+	public function offset($number)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'offset',
+			'args' => array($number),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Enables the query to be cached for a specified amount of time.
+	 *
+	 * @param   integer  number of seconds to cache
+	 * @return  $this
+	 * @uses    Kohana::$cache_life
+	 */
+	public function cached($lifetime = NULL)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'cached',
+			'args' => array($lifetime),
+		);
+
+		return $this;
 	}
 } // End ORM
