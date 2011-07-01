@@ -469,12 +469,6 @@ class Kohana_ORM extends Model implements serializable {
 	 */
 	public function __unset($column)
 	{
-		if ($this->loaded() AND ! array_key_exists($column, $this->_original_values))
-		{
-			// Store the original for validation purposes
-			$this->_original_values[$column] = $this->_object[$column];
-		}
-
 		unset($this->_object[$column], $this->_changed[$column], $this->_related[$column]);
 	}
 
@@ -663,12 +657,6 @@ class Kohana_ORM extends Model implements serializable {
 			// See if the data really changed
 			if ($value !== $this->_object[$column])
 			{
-				if ( ! array_key_exists($column, $this->_original_values))
-				{
-					// Store the original for validation purposes
-					$this->_original_values[$column] = $this->_object[$column];
-				}
-
 				$this->_object[$column] = $value;
 
 				// Data has changed
@@ -1054,6 +1042,12 @@ class Kohana_ORM extends Model implements serializable {
 			}
 		}
 
+		if ($this->_loaded)
+		{
+			// Store the object in its original state
+			$this->_original_values = $this->_object;
+		}
+
 		return $this;
 	}
 
@@ -1237,7 +1231,8 @@ class Kohana_ORM extends Model implements serializable {
 		$this->_loaded = $this->_saved = TRUE;
 
 		// All changes have been saved
-		$this->_changed = $this->_original_values = array();
+		$this->_changed = array();
+		$this->_original_values = $this->_object;;
 
 		return $this;
 	}
@@ -1301,7 +1296,8 @@ class Kohana_ORM extends Model implements serializable {
 		$this->_saved = TRUE;
 
 		// All changes have been saved
-		$this->_changed = $this->_original_values = array();
+		$this->_changed = array();
+		$this->_original_values = $this->_object;
 
 		return $this;
 	}
