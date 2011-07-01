@@ -2125,4 +2125,22 @@ class Kohana_ORM extends Model implements serializable {
 
 		return $this;
 	}
+
+	/**
+	 * Set the value of a parameter in the query.
+	 *
+	 * @param   string   parameter key to replace
+	 * @param   mixed    value to use
+	 * @return  $this
+	 */
+	public function param($param, $value)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'param',
+			'args' => array($param, $value),
+		);
+
+		return $this;
+	}
 } // End ORM
