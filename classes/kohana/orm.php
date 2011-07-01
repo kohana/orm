@@ -2143,4 +2143,26 @@ class Kohana_ORM extends Model implements serializable {
 
 		return $this;
 	}
+
+	/**
+	 * Checks whether a column value is unique.
+	 * Excludes itself if loaded.
+	 *
+	 * @param   string   the field to check for uniqueness
+	 * @param   mixed    the value to check for uniqueness
+	 * @return  bool     whteher the value is unique
+	 */
+	public function unique($field, $value)
+	{
+		$model = ORM::factory($this->object_name())
+			->where($field, '=', $value)
+			->find();
+
+		if ($this->loaded())
+		{
+			return ( ! ($model->loaded() AND $model->pk() != $this->pk()));
+		}
+
+		return ( ! $model->loaded());
+	}
 } // End ORM
