@@ -88,13 +88,14 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 	 * Merges an ORM_Validation_Exception object into the current exception
 	 * Useful when you want to combine errors into one array
 	 *
-	 * @param  string                   $alias    The relationship alias from the model
 	 * @param  ORM_Validation_Exception $object   The exception to merge
 	 * @param  mixed                    $has_many The array key to use if this exception can be merged multiple times
 	 * @return ORM_Validation_Exception
 	 */
-	public function merge($alias, ORM_Validation_Exception $object, $has_many = FALSE)
+	public function merge(ORM_Validation_Exception $object, $has_many = FALSE)
 	{
+		$alias = $object->alias();
+
 		// We will need this when generating errors
 		$this->_objects[$alias]['_has_many'] = ($has_many !== FALSE);
 
@@ -149,10 +150,7 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 		{
 			if (is_array($object))
 			{
-				$sub_alias = $array['_has_many'] ? $alias : $key;
-
-				// Recursively fill the errors array
-				$errors[$alias] = $this->generate_errors($sub_alias, $object, $directory, $translate);
+				$errors[$key] = $this->generate_errors($key, $object, $directory, $translate);
 			}
 			elseif ($object instanceof Validation)
 			{
@@ -182,5 +180,15 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 	public function objects()
 	{
 		return $this->_objects;
+	}
+
+	/**
+	 * Returns the protected _alias property from this exception
+	 *
+	 * @return string
+	 */
+	public function alias()
+	{
+		return $this->_alias;
 	}
 } // End Kohana_ORM_Validation_Exception
