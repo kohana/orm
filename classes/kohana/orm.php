@@ -12,53 +12,6 @@
  * @author     Kohana Team
  * @copyright  (c) 2007-2010 Kohana Team
  * @license    http://kohanaframework.org/license
- *
- *
- * @method ORM where()
- * @method ORM and_where()
- * @method ORM or_where()
- * @method ORM where_open()
- * @method ORM and_where_open()
- * @method ORM or_where_open()
- * @method ORM where_close()
- * @method ORM and_where_close()
- * @method ORM or_where_close()
- * @method ORM distinct()
- * @method ORM select()
- * @method ORM from()
- * @method ORM join()
- * @method ORM on()
- * @method ORM group_by()
- * @method ORM having()
- * @method ORM and_having()
- * @method ORM or_having()
- * @method ORM having_open()
- * @method ORM and_having_open()
- * @method ORM or_having_open()
- * @method ORM having_close()
- * @method ORM and_having_close()
- * @method ORM or_having_close()
- * @method ORM order_by()
- * @method ORM limit()
- * @method ORM offset()
- * @method ORM cached()
- * @method Validation validation()
- *
- * @property string $object_name Name of the model
- * @property string $object_plural Plural name of the model
- * @property bool $loaded ORM object was loaded?
- * @property bool $saved ORM object was saved?
- * @property mixed $primary_key
- * @property mixed $primary_val
- * @property string $table_name
- * @property string $table_columns
- * @property array $has_one
- * @property array $belongs_to
- * @property array $has_many
- * @property array $has_many_through
- * @property array $load_with
- * @property string $updated_column
- * @property string $created_column
  */
 class Kohana_ORM extends Model implements serializable {
 
@@ -67,31 +20,6 @@ class Kohana_ORM extends Model implements serializable {
 	 * @var array
 	 */
 	protected static $_column_cache = array();
-
-	/**
-	 * Callable database methods
-	 * @var array
-	 */
-	protected static $_db_methods = array
-	(
-		'where', 'and_where', 'or_where', 'where_open', 'and_where_open', 'or_where_open', 'where_close',
-		'and_where_close', 'or_where_close', 'distinct', 'select', 'from', 'join', 'on', 'group_by',
-		'having', 'and_having', 'or_having', 'having_open', 'and_having_open', 'or_having_open',
-		'having_close', 'and_having_close', 'or_having_close', 'order_by', 'limit', 'offset', 'cached',
-	);
-
-	/**
-	 * Members that have access methods
-	 * @var array
-	 */
-	protected static $_properties = array
-	(
-		'object_name', 'object_plural', 'loaded', 'saved', // Object
-		'primary_key', 'primary_val', 'table_name', 'table_columns', // Table
-		'has_one', 'belongs_to', 'has_many', 'has_many_through', 'load_with', // Relationships
-		'updated_column', 'created_column',
-		'validation',
-	);
 
 	/**
 	 * Creates and returns a new model.
@@ -149,6 +77,11 @@ class Kohana_ORM extends Model implements serializable {
 	 * @var array
 	 */
 	protected $_changed = array();
+
+	/**
+	 * @var array
+	 */
+	protected $_original_values = array();
 
 	/**
 	 * @var array
@@ -216,6 +149,12 @@ class Kohana_ORM extends Model implements serializable {
 	 * @var string
 	 */
 	protected $_created_column = NULL;
+
+	/**
+	 * Auto-serialize and unserialize columns on get/set
+	 * @var array
+	 */
+	protected $_serialize_columns = array();
 
 	/**
 	 * Table primary key
@@ -290,6 +229,13 @@ class Kohana_ORM extends Model implements serializable {
 	protected $_cast_data = array();
 
 	/**
+	 * The message filename used for validation errors.
+	 * Defaults to ORM::$_object_name
+	 * @var string
+	 */
+	protected $_errors_filename = NULL;
+
+	/**
 	 * Constructs a new model and loads a record if given
 	 *
 	 * @param   mixed $id Parameter for find or object to load
@@ -337,6 +283,11 @@ class Kohana_ORM extends Model implements serializable {
 		// Set the object name and plural name
 		$this->_object_name = strtolower(substr(get_class($this), 6));
 		$this->_object_plural = Inflector::plural($this->_object_name);
+
+		if ( ! $this->_errors_filename)
+		{
+			$this->_errors_filename = $this->_object_name;
+		}
 
 		if ( ! is_object($this->_db))
 		{
@@ -398,7 +349,9 @@ class Kohana_ORM extends Model implements serializable {
 	{
 		// Build the validation object with its rules
 		$this->_validation = Validation::factory($this->_object)
-			->bind(':model', $this);
+			->bind(':model', $this)
+			->bind(':original_values', $this->_original_values)
+			->bind(':changed', $this->_changed);
 
 		foreach ($this->rules() as $field => $rules)
 		{
@@ -458,7 +411,7 @@ class Kohana_ORM extends Model implements serializable {
 		$values = array_combine(array_keys($this->_table_columns), array_fill(0, count($this->_table_columns), NULL));
 
 		// Replace the object and reset the object status
-		$this->_object = $this->_changed = $this->_related = array();
+		$this->_object = $this->_changed = $this->_related = $this->_original_values = array();
 
 		// Replace the current object with an empty one
 		$this->_load_values($values);
@@ -482,7 +435,7 @@ class Kohana_ORM extends Model implements serializable {
 		$primary_key = $this->pk();
 
 		// Replace the object and reset the object status
-		$this->_object = $this->_changed = $this->_related = array();
+		$this->_object = $this->_changed = $this->_related = $this->_original_values = array();
 
 		// Only reload the object if we have one to reload
 		if ($this->_loaded)
@@ -538,12 +491,26 @@ class Kohana_ORM extends Model implements serializable {
 	public function serialize()
 	{
 		// Store only information about the object
-		foreach (array('_primary_key_value', '_object', '_changed', '_loaded', '_saved', '_sorting') as $var)
+		foreach (array('_primary_key_value', '_object', '_changed', '_loaded', '_saved', '_sorting', '_original_values') as $var)
 		{
 			$data[$var] = $this->{$var};
 		}
 
 		return serialize($data);
+	}
+
+	/**
+	 * Check whether the model data has been modified.
+	 * If $field is specified, checks whether that field was modified.
+	 *
+	 * @param string  field to check for changes
+	 * @return  bool  Whether or not the field has changed
+	 */
+	public function changed($field = NULL)
+	{
+		return ($field === NULL)
+			? $this->_changed
+			: Arr::get($this->_changed, $field);
 	}
 
 	/**
@@ -570,45 +537,6 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Handles pass-through to database methods. Calls to query methods
-	 * (query, get, insert, update) are not allowed. Query builder methods
-	 * are chainable.
-	 *
-	 * @param   string  $method Method name
-	 * @param   array   $args   Method arguments
-	 * @return  mixed
-	 */
-	public function __call($method, array $args)
-	{
-		if (in_array($method, ORM::$_properties))
-		{
-			if ($method === 'validation')
-			{
-				if ( ! isset($this->_validation))
-				{
-					// Initialize the validation object
-					$this->_validation();
-				}
-			}
-
-			// Return the property
-			return $this->{'_'.$method};
-		}
-		elseif (in_array($method, ORM::$_db_methods))
-		{
-			// Add pending database call which is executed after query type is determined
-			$this->_db_pending[] = array('name' => $method, 'args' => $args);
-
-			return $this;
-		}
-		else
-		{
-			throw new Kohana_Exception('Invalid method :method called in :class',
-				array(':method' => $method, ':class' => get_class($this)));
-		}
-	}
-
-	/**
 	 * Handles retrieval of all model values, relationships, and metadata.
 	 *
 	 * @param   string $column Column name
@@ -618,7 +546,9 @@ class Kohana_ORM extends Model implements serializable {
 	{
 		if (array_key_exists($column, $this->_object))
 		{
-			return $this->_object[$column];
+			return (in_array($column, $this->_serialize_columns))
+				? $this->_unserialize_value($this->_object[$column])
+				: $this->_object[$column];
 		}
 		elseif (isset($this->_related[$column]))
 		{
@@ -714,6 +644,11 @@ class Kohana_ORM extends Model implements serializable {
 	 */
 	public function set($column, $value)
 	{
+		if (in_array($column, $this->_serialize_columns))
+		{
+			$value = $this->_serialize_value($value);
+		}
+
 		if (array_key_exists($column, $this->_object))
 		{
 			// Filter the data
@@ -1066,16 +1001,16 @@ class Kohana_ORM extends Model implements serializable {
 		{
 			if ($values[$this->_primary_key] !== NULL)
 			{
-				// Flag as loaded, saved, and valid
-				$this->_loaded = $this->_saved = $this->_valid = TRUE;
+				// Flag as loaded and valid
+				$this->_loaded = $this->_valid = TRUE;
 
 				// Store primary key
 				$this->_primary_key_value = $values[$this->_primary_key];
 			}
 			else
 			{
-				// Not loaded, saved, or valid
-				$this->_loaded = $this->_saved = $this->_valid = FALSE;
+				// Not loaded or valid
+				$this->_loaded = $this->_valid = FALSE;
 			}
 		}
 
@@ -1105,6 +1040,12 @@ class Kohana_ORM extends Model implements serializable {
 				// Load the related objects with the values in the result
 				$this->_related($object)->_load_values($values);
 			}
+		}
+
+		if ($this->_loaded)
+		{
+			// Store the object in its original state
+			$this->_original_values = $this->_object;
 		}
 
 		return $this;
@@ -1230,7 +1171,7 @@ class Kohana_ORM extends Model implements serializable {
 
 		if (($this->_valid = $array->check()) === FALSE OR $extra_errors)
 		{
-			$exception = new ORM_Validation_Exception($this->_object_name, $array);
+			$exception = new ORM_Validation_Exception($this->errors_filename(), $array);
 
 			if ($extra_errors)
 			{
@@ -1291,6 +1232,7 @@ class Kohana_ORM extends Model implements serializable {
 
 		// All changes have been saved
 		$this->_changed = array();
+		$this->_original_values = $this->_object;;
 
 		return $this;
 	}
@@ -1355,6 +1297,7 @@ class Kohana_ORM extends Model implements serializable {
 
 		// All changes have been saved
 		$this->_changed = array();
+		$this->_original_values = $this->_object;
 
 		return $this;
 	}
@@ -1403,13 +1346,23 @@ class Kohana_ORM extends Model implements serializable {
 	 *     $model->has('roles', 5);
 	 *     // Check for all of the following roles
 	 *     $model->has('roles', array(1, 2, 3, 4));
-
+	 *     // Check if $model has any roles
+	 *     $model->has('roles')
+	 *
 	 * @param  string  $alias    Alias of the has_many "through" relationship
 	 * @param  mixed   $far_keys Related model, primary key, or an array of primary keys
 	 * @return Database_Result
 	 */
-	public function has($alias, $far_keys)
+	public function has($alias, $far_keys = NULL)
 	{
+		if ($far_keys === NULL)
+		{
+			return (bool) DB::select(array('COUNT("*")', 'records_found'))
+				->from($this->_has_many[$alias]['through'])
+				->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk())
+				->execute($this->_db)->get('records_found');
+		}
+
 		$far_keys = ($far_keys instanceof ORM) ? $far_keys->pk() : $far_keys;
 
 		// We need an array to simplify the logic
@@ -1618,5 +1571,611 @@ class Kohana_ORM extends Model implements serializable {
 		$this->_db_reset = $next;
 
 		return $this;
+	}
+
+	protected function _serialize_value($value)
+	{
+		return json_encode($value);
+	}
+
+	protected function _unserialize_value($value)
+	{
+		return json_decode($value);
+	}
+
+	public function object_name()
+	{
+		return $this->_object_name;
+	}
+
+	public function object_plural()
+	{
+		return $this->_object_plural;
+	}
+
+	public function loaded()
+	{
+		return $this->_loaded;
+	}
+
+	public function saved()
+	{
+		return $this->_saved;
+	}
+
+	public function primary_key()
+	{
+		return $this->_primary_key;
+	}
+
+	public function primary_val()
+	{
+		return $this->_primary_val();
+	}
+
+	public function table_name()
+	{
+		return $this->_table_name;
+	}
+
+	public function table_columns()
+	{
+		return $this->_table_columns;
+	}
+
+	public function has_one()
+	{
+		return $this->_has_one;
+	}
+
+	public function belongs_to()
+	{
+		return $this->_belongs_to;
+	}
+
+	public function has_many()
+	{
+		return $this->_has_many;
+	}
+
+	public function load_with()
+	{
+		return $this->_load_with;
+	}
+
+	public function original_values()
+	{
+		return $this->_original_values;
+	}
+
+	public function created_column()
+	{
+		return $this->_created_column;
+	}
+
+	public function updated_column()
+	{
+		return $this->_updated_column;
+	}
+
+	public function validation()
+	{
+		if ( ! isset($this->_validation))
+		{
+			// Initialize the validation object
+			$this->_validation();
+		}
+
+		return $this->_validation;
+	}
+
+	public function object()
+	{
+		return $this->_object;
+	}
+
+	public function errors_filename()
+	{
+		return $this->_errors_filename;
+	}
+
+	/**
+	 * Alias of and_where()
+	 *
+	 * @param   mixed   column name or array($column, $alias) or object
+	 * @param   string  logic operator
+	 * @param   mixed   column value
+	 * @return  $this
+	 */
+	public function where($column, $op, $value)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'where',
+			'args' => array($column, $op, $value),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Creates a new "AND WHERE" condition for the query.
+	 *
+	 * @param   mixed   column name or array($column, $alias) or object
+	 * @param   string  logic operator
+	 * @param   mixed   column value
+	 * @return  $this
+	 */
+	public function and_where($column, $op, $value)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'and_where',
+			'args' => array($column, $op, $value),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Creates a new "OR WHERE" condition for the query.
+	 *
+	 * @param   mixed   column name or array($column, $alias) or object
+	 * @param   string  logic operator
+	 * @param   mixed   column value
+	 * @return  $this
+	 */
+	public function or_where($column, $op, $value)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'or_where',
+			'args' => array($column, $op, $value),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Alias of and_where_open()
+	 *
+	 * @return  $this
+	 */
+	public function where_open()
+	{
+		return $this->and_where_open();
+	}
+
+	/**
+	 * Opens a new "AND WHERE (...)" grouping.
+	 *
+	 * @return  $this
+	 */
+	public function and_where_open()
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'and_where_open',
+			'args' => array(),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Opens a new "OR WHERE (...)" grouping.
+	 *
+	 * @return  $this
+	 */
+	public function or_where_open()
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'or_where_open',
+			'args' => array(),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Closes an open "AND WHERE (...)" grouping.
+	 *
+	 * @return  $this
+	 */
+	public function where_close()
+	{
+		return $this->and_where_close();
+	}
+
+	/**
+	 * Closes an open "AND WHERE (...)" grouping.
+	 *
+	 * @return  $this
+	 */
+	public function and_where_close()
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'and_where_close',
+			'args' => array(),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Closes an open "OR WHERE (...)" grouping.
+	 *
+	 * @return  $this
+	 */
+	public function or_where_close()
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'or_where_close',
+			'args' => array(),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Applies sorting with "ORDER BY ..."
+	 *
+	 * @param   mixed   column name or array($column, $alias) or object
+	 * @param   string  direction of sorting
+	 * @return  $this
+	 */
+	public function order_by($column, $direction = NULL)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'order_by',
+			'args' => array($column, $direction),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Return up to "LIMIT ..." results
+	 *
+	 * @param   integer  maximum results to return
+	 * @return  $this
+	 */
+	public function limit($number)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'limit',
+			'args' => array($number),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Enables or disables selecting only unique columns using "SELECT DISTINCT"
+	 *
+	 * @param   boolean  enable or disable distinct columns
+	 * @return  $this
+	 */
+	public function distinct($value)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'distinct',
+			'args' => array($value),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Choose the columns to select from.
+	 *
+	 * @param   mixed  column name or array($column, $alias) or object
+	 * @param   ...
+	 * @return  $this
+	 */
+	public function select($columns = NULL)
+	{
+		$columns = func_get_args();
+
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'select',
+			'args' => array($columns),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Choose the tables to select "FROM ..."
+	 *
+	 * @param   mixed  table name or array($table, $alias) or object
+	 * @param   ...
+	 * @return  $this
+	 */
+	public function from($tables)
+	{
+		$tables = func_get_args();
+
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'from',
+			'args' => array($tables),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Adds addition tables to "JOIN ...".
+	 *
+	 * @param   mixed   column name or array($column, $alias) or object
+	 * @param   string  join type (LEFT, RIGHT, INNER, etc)
+	 * @return  $this
+	 */
+	public function join($table, $type = NULL)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'join',
+			'args' => array($table, $type),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Adds "ON ..." conditions for the last created JOIN statement.
+	 *
+	 * @param   mixed   column name or array($column, $alias) or object
+	 * @param   string  logic operator
+	 * @param   mixed   column name or array($column, $alias) or object
+	 * @return  $this
+	 */
+	public function on($c1, $op, $c2)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'on',
+			'args' => array($c1, $op, $c2),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Creates a "GROUP BY ..." filter.
+	 *
+	 * @param   mixed   column name or array($column, $alias) or object
+	 * @param   ...
+	 * @return  $this
+	 */
+	public function group_by($columns)
+	{
+		$columns = func_get_args();
+
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'group_by',
+			'args' => array($columns),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Alias of and_having()
+	 *
+	 * @param   mixed   column name or array($column, $alias) or object
+	 * @param   string  logic operator
+	 * @param   mixed   column value
+	 * @return  $this
+	 */
+	public function having($column, $op, $value = NULL)
+	{
+		return $this->and_having($column, $op, $value);
+	}
+
+	/**
+	 * Creates a new "AND HAVING" condition for the query.
+	 *
+	 * @param   mixed   column name or array($column, $alias) or object
+	 * @param   string  logic operator
+	 * @param   mixed   column value
+	 * @return  $this
+	 */
+	public function and_having($column, $op, $value = NULL)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'and_having',
+			'args' => array($column, $op, $value),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Creates a new "OR HAVING" condition for the query.
+	 *
+	 * @param   mixed   column name or array($column, $alias) or object
+	 * @param   string  logic operator
+	 * @param   mixed   column value
+	 * @return  $this
+	 */
+	public function or_having($column, $op, $value = NULL)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'or_having',
+			'args' => array($column, $op, $value),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Alias of and_having_open()
+	 *
+	 * @return  $this
+	 */
+	public function having_open()
+	{
+		return $this->and_having_open();
+	}
+
+	/**
+	 * Opens a new "AND HAVING (...)" grouping.
+	 *
+	 * @return  $this
+	 */
+	public function and_having_open()
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'and_having_open',
+			'args' => array(),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Opens a new "OR HAVING (...)" grouping.
+	 *
+	 * @return  $this
+	 */
+	public function or_having_open()
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'or_having_open',
+			'args' => array(),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Closes an open "AND HAVING (...)" grouping.
+	 *
+	 * @return  $this
+	 */
+	public function having_close()
+	{
+		return $this->and_having_close();
+	}
+
+	/**
+	 * Closes an open "AND HAVING (...)" grouping.
+	 *
+	 * @return  $this
+	 */
+	public function and_having_close()
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'and_having_close',
+			'args' => array(),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Closes an open "OR HAVING (...)" grouping.
+	 *
+	 * @return  $this
+	 */
+	public function or_having_close()
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'or_having_close',
+			'args' => array(),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Start returning results after "OFFSET ..."
+	 *
+	 * @param   integer   starting result number
+	 * @return  $this
+	 */
+	public function offset($number)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'offset',
+			'args' => array($number),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Enables the query to be cached for a specified amount of time.
+	 *
+	 * @param   integer  number of seconds to cache
+	 * @return  $this
+	 * @uses    Kohana::$cache_life
+	 */
+	public function cached($lifetime = NULL)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'cached',
+			'args' => array($lifetime),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Set the value of a parameter in the query.
+	 *
+	 * @param   string   parameter key to replace
+	 * @param   mixed    value to use
+	 * @return  $this
+	 */
+	public function param($param, $value)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'param',
+			'args' => array($param, $value),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Checks whether a column value is unique.
+	 * Excludes itself if loaded.
+	 *
+	 * @param   string   the field to check for uniqueness
+	 * @param   mixed    the value to check for uniqueness
+	 * @return  bool     whteher the value is unique
+	 */
+	public function unique($field, $value)
+	{
+		$model = ORM::factory($this->object_name())
+			->where($field, '=', $value)
+			->find();
+
+		if ($this->loaded())
+		{
+			return ( ! ($model->loaded() AND $model->pk() != $this->pk()));
+		}
+
+		return ( ! $model->loaded());
 	}
 } // End ORM
