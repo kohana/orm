@@ -402,7 +402,10 @@ class Kohana_ORM extends Model implements serializable {
 
 		foreach ($this->rules() as $field => $rules)
 		{
-			$this->_validation->rules($field, $rules);
+			if ($this->_changed[$field])
+			{
+				$this->_validation->rules($field, $rules);
+			}
 		}
 
 		// Use column names by default for labels
