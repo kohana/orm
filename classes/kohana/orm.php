@@ -1232,7 +1232,7 @@ class Kohana_ORM extends Model implements serializable {
 
 		// All changes have been saved
 		$this->_changed = array();
-		$this->_original_values = $this->_object;;
+		$this->_original_values = $this->_object;
 
 		return $this;
 	}
