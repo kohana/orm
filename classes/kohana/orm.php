@@ -1886,7 +1886,7 @@ class Kohana_ORM extends Model implements serializable {
 		// Add pending database call which is executed after query type is determined
 		$this->_db_pending[] = array(
 			'name' => 'select',
-			'args' => array($columns),
+			'args' => $columns,
 		);
 
 		return $this;
@@ -1906,7 +1906,7 @@ class Kohana_ORM extends Model implements serializable {
 		// Add pending database call which is executed after query type is determined
 		$this->_db_pending[] = array(
 			'name' => 'from',
-			'args' => array($tables),
+			'args' => $tables,
 		);
 
 		return $this;
@@ -1963,7 +1963,7 @@ class Kohana_ORM extends Model implements serializable {
 		// Add pending database call which is executed after query type is determined
 		$this->_db_pending[] = array(
 			'name' => 'group_by',
-			'args' => array($columns),
+			'args' => $columns,
 		);
 
 		return $this;
