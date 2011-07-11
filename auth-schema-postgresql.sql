@@ -16,7 +16,7 @@ CREATE TABLE roles_users
 CREATE TABLE users
 (
   id serial,
-  email varchar(318) NOT NULL,
+  email varchar(254) NOT NULL,
   username varchar(32) NOT NULL,
   "password" varchar(64) NOT NULL,
   logins integer NOT NULL DEFAULT 0,
