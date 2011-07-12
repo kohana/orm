@@ -41,7 +41,6 @@ class Model_Auth_User extends ORM {
 			'email' => array(
 				array('not_empty'),
 				array('email'),
-				array('max_length', array(':value', 254)),
 				array(array($this, 'unique'), array('email', ':value')),
 			),
 		);
