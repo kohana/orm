@@ -1608,11 +1608,6 @@ class Kohana_ORM extends Model implements serializable {
 		return $this->_primary_key;
 	}
 
-	public function primary_val()
-	{
-		return $this->_primary_val();
-	}
-
 	public function table_name()
 	{
 		return $this->_table_name;
