@@ -1286,6 +1286,12 @@ class Kohana_ORM extends Model implements serializable {
 			$this->_object[$this->_primary_key] = $this->_primary_key_value = $result[0];
 		}
 
+		if (empty($this->_primary_key_value))
+		{
+			// Set the primary key value if it was manually chosen by the user
+			$this->_primary_key_value = $this->_object[$this->_primary_key];
+		}
+
 		// Object is now loaded and saved
 		$this->_loaded = $this->_saved = TRUE;
 
