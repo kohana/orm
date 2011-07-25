@@ -1286,6 +1286,12 @@ class Kohana_ORM extends Model implements serializable {
 			$this->_object[$this->_primary_key] = $this->_primary_key_value = $result[0];
 		}
 
+		if (empty($this->_primary_key_value))
+		{
+			// Set the primary key value if it was manually chosen by the user
+			$this->_primary_key_value = $this->_object[$this->_primary_key];
+		}
+
 		// Object is now loaded and saved
 		$this->_loaded = $this->_saved = TRUE;
 
@@ -1549,23 +1555,6 @@ class Kohana_ORM extends Model implements serializable {
 	{
 		// Proxy to database
 		return $this->_db->list_columns($this->_table_name);
-	}
-
-	/**
-	 * Proxy method to Database field_data.
-	 *
-	 * @chainable
-	 * @param  string $sql SQL query to clear
-	 * @return ORM
-	 */
-	public function clear_cache($sql = NULL)
-	{
-		// Proxy to database
-		$this->_db->clear_cache($sql);
-
-		ORM::$_column_cache = array();
-
-		return $this;
 	}
 
 	/**
