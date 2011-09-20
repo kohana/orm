@@ -150,7 +150,15 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 		{
 			if (is_array($object))
 			{
-				$errors[$key] = $this->generate_errors($alias.DIRECTORY_SEPARATOR.$key, $object, $directory, $translate);
+				// Temporary hack - see #4185 and #3877
+				if ($key == '_external')
+				{
+					$errors[$key] = $this->generate_errors($alias.DIRECTORY_SEPARATOR.$key, $object, $directory, $translate);
+				}
+				else
+				{
+					$errors[$key] = $this->generate_errors($key, $object, $directory, $translate);
+				}
 			}
 			elseif ($object instanceof Validation)
 			{
