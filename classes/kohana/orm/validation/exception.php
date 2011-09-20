@@ -150,7 +150,7 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 		{
 			if (is_array($object))
 			{
-				$errors[$key] = $this->generate_errors($key, $object, $directory, $translate);
+				$errors[$key] = $this->generate_errors($alias.DIRECTORY_SEPARATOR.$key, $object, $directory, $translate);
 			}
 			elseif ($object instanceof Validation)
 			{
@@ -161,7 +161,7 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 				}
 				else
 				{
-					$file = trim($directory.'/'.$alias, '/');
+					$file = trim($directory.DIRECTORY_SEPARATOR.$alias, DIRECTORY_SEPARATOR);
 				}
 
 				// Merge in this array of errors
