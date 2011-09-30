@@ -1,6 +1,6 @@
 <?php defined('SYSPATH') or die('No direct access allowed.');
 /**
- * Default auth user toke
+ * Default auth user token
  *
  * @package    Kohana/Auth
  * @author     Kohana Team
@@ -49,9 +49,19 @@ class Model_Auth_User_Token extends ORM {
 		return $this;
 	}
 
+	/**
+	 * Generates a unique token when one isn't already set and inserts it to
+	 * the database.
+	 *
+	 * @param   Validation  $validation  Validation object
+	 * @return  ORM
+	 */
 	public function create(Validation $validation = NULL)
 	{
-		$this->token = $this->create_token();
+		if ($this->token === NULL OR ORM::factory('user_token', array('token' => $token))->loaded())
+		{
+			$this->token = $this->create_token();
+		}
 
 		return parent::create($validation);
 	}
