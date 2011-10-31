@@ -89,7 +89,7 @@ class Kohana_Auth_ORM extends Auth {
 			{
 				// Token data
 				$data = array(
-					'user_id'    => $user->id,
+					'user_id'    => $user->pk(),
 					'expires'    => time() + $this->_config['lifetime'],
 					'user_agent' => sha1(Request::$user_agent),
 				);
