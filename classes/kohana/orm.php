@@ -747,8 +747,10 @@ class Kohana_ORM extends Model implements serializable {
 
 		foreach ($this->_related as $column => $model)
 		{
-			// Include any related objects that are already loaded
-			$object[$column] = $model->as_array();
+			if($model->loaded()) {
+				// Include any related objects that are already loaded
+				$object[$column] = $model->as_array();
+			}
 		}
 
 		return $object;
@@ -1226,6 +1228,11 @@ class Kohana_ORM extends Model implements serializable {
 			// Load the insert id as the primary key if it was left out
 			$this->_object[$this->_primary_key] = $this->_primary_key_value = $result[0];
 		}
+		else if( $this->_primary_key_value === NULL)
+		{
+			// Set primary key if it was not loaded from database
+			$this->_primary_key_value = $result[0];
+		}
 
 		// Object is now loaded and saved
 		$this->_loaded = $this->_saved = TRUE;
@@ -1580,7 +1587,7 @@ class Kohana_ORM extends Model implements serializable {
 
 	protected function _unserialize_value($value)
 	{
-		return json_decode($value);
+		return json_decode($value,true);
 	}
 
 	public function object_name()
