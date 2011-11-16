@@ -1221,7 +1221,7 @@ class Kohana_ORM extends Model implements serializable {
 			->values(array_values($data))
 			->execute($this->_db);
 
-		if ( ! array_key_exists($this->_primary_key, $data))
+		if ( ! array_key_exists($this->_primary_key, $data) && ! empty($data[$this->_primary_key]) )
 		{
 			// Load the insert id as the primary key if it was left out
 			$this->_object[$this->_primary_key] = $this->_primary_key_value = $result[0];
