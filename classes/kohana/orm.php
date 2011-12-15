@@ -850,7 +850,8 @@ class Kohana_ORM extends Model implements serializable {
 		switch ($type)
 		{
 			case Database::SELECT:
-				$this->_db_builder = DB::select();
+                // Render the result as object by default
+				$this->_db_builder = DB::select()->as_object(get_class($this));
 			break;
 			case Database::UPDATE:
 				$this->_db_builder = DB::update(array($this->_table_name, $this->_object_name));
@@ -960,7 +961,7 @@ class Kohana_ORM extends Model implements serializable {
 		if ($multiple === TRUE)
 		{
 			// Return database iterator casting to this object type
-			$result = $this->_db_builder->as_object(get_class($this))->execute($this->_db);
+			$result = $this->_db_builder->execute($this->_db);
 
 			$this->reset();
 
@@ -2151,6 +2152,36 @@ class Kohana_ORM extends Model implements serializable {
 
 		return $this;
 	}
+
+    /**
+     * Returns results as associative arrays
+     *
+     * @return  $this
+     */
+    public function as_assoc()
+    {
+        $this->_db_pending[] = array(
+            'name' => 'as_assoc',
+            'args' => array(),
+        );
+
+        return $this;
+    }
+
+    /**
+     * Returns results as objects
+     *
+     * @return  $this
+     */
+    public function as_object()
+    {
+        $this->_db_pending[] = array(
+            'name' => 'as_object',
+            'args' => array(get_class($this)),
+        );
+
+        return $this;
+    }
 
 	/**
 	 * Checks whether a column value is unique.
