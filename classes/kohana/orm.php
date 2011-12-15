@@ -503,7 +503,7 @@ class Kohana_ORM extends Model implements serializable {
 	 * Check whether the model data has been modified.
 	 * If $field is specified, checks whether that field was modified.
 	 *
-	 * @param string  field to check for changes
+	 * @param string  $field  field to check for changes
 	 * @return  bool  Whether or not the field has changed
 	 */
 	public function changed($field = NULL)
@@ -1677,9 +1677,9 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Alias of and_where()
 	 *
-	 * @param   mixed   column name or array($column, $alias) or object
-	 * @param   string  logic operator
-	 * @param   mixed   column value
+	 * @param   mixed   $column  column name or array($column, $alias) or object
+	 * @param   string  $op      logic operator
+	 * @param   mixed   $value   column value
 	 * @return  $this
 	 */
 	public function where($column, $op, $value)
@@ -1696,9 +1696,9 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Creates a new "AND WHERE" condition for the query.
 	 *
-	 * @param   mixed   column name or array($column, $alias) or object
-	 * @param   string  logic operator
-	 * @param   mixed   column value
+	 * @param   mixed   $column  column name or array($column, $alias) or object
+	 * @param   string  $op      logic operator
+	 * @param   mixed   $value   column value
 	 * @return  $this
 	 */
 	public function and_where($column, $op, $value)
@@ -1715,9 +1715,9 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Creates a new "OR WHERE" condition for the query.
 	 *
-	 * @param   mixed   column name or array($column, $alias) or object
-	 * @param   string  logic operator
-	 * @param   mixed   column value
+	 * @param   mixed   $column  column name or array($column, $alias) or object
+	 * @param   string  $op      logic operator
+	 * @param   mixed   $value   column value
 	 * @return  $this
 	 */
 	public function or_where($column, $op, $value)
@@ -1818,8 +1818,8 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Applies sorting with "ORDER BY ..."
 	 *
-	 * @param   mixed   column name or array($column, $alias) or object
-	 * @param   string  direction of sorting
+	 * @param   mixed   $column     column name or array($column, $alias) or object
+	 * @param   string  $direction  direction of sorting
 	 * @return  $this
 	 */
 	public function order_by($column, $direction = NULL)
@@ -1836,7 +1836,7 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Return up to "LIMIT ..." results
 	 *
-	 * @param   integer  maximum results to return
+	 * @param   integer  $number  maximum results to return
 	 * @return  $this
 	 */
 	public function limit($number)
@@ -1853,7 +1853,7 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Enables or disables selecting only unique columns using "SELECT DISTINCT"
 	 *
-	 * @param   boolean  enable or disable distinct columns
+	 * @param   boolean  $value  enable or disable distinct columns
 	 * @return  $this
 	 */
 	public function distinct($value)
@@ -1870,7 +1870,7 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Choose the columns to select from.
 	 *
-	 * @param   mixed  column name or array($column, $alias) or object
+	 * @param   mixed  $columns  column name or array($column, $alias) or object
 	 * @param   ...
 	 * @return  $this
 	 */
@@ -1890,7 +1890,7 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Choose the tables to select "FROM ..."
 	 *
-	 * @param   mixed  table name or array($table, $alias) or object
+	 * @param   mixed  $tables  table name or array($table, $alias) or object
 	 * @param   ...
 	 * @return  $this
 	 */
@@ -1910,8 +1910,8 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Adds addition tables to "JOIN ...".
 	 *
-	 * @param   mixed   column name or array($column, $alias) or object
-	 * @param   string  join type (LEFT, RIGHT, INNER, etc)
+	 * @param   mixed   $table  column name or array($column, $alias) or object
+	 * @param   string  $type   join type (LEFT, RIGHT, INNER, etc)
 	 * @return  $this
 	 */
 	public function join($table, $type = NULL)
@@ -1928,9 +1928,9 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Adds "ON ..." conditions for the last created JOIN statement.
 	 *
-	 * @param   mixed   column name or array($column, $alias) or object
-	 * @param   string  logic operator
-	 * @param   mixed   column name or array($column, $alias) or object
+	 * @param   mixed   $ci  column name or array($column, $alias) or object
+	 * @param   string  $op  logic operator
+	 * @param   mixed   $c2  column name or array($column, $alias) or object
 	 * @return  $this
 	 */
 	public function on($c1, $op, $c2)
@@ -1947,7 +1947,7 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Creates a "GROUP BY ..." filter.
 	 *
-	 * @param   mixed   column name or array($column, $alias) or object
+	 * @param   mixed   $columns  column name or array($column, $alias) or object
 	 * @param   ...
 	 * @return  $this
 	 */
@@ -1967,9 +1967,9 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Alias of and_having()
 	 *
-	 * @param   mixed   column name or array($column, $alias) or object
-	 * @param   string  logic operator
-	 * @param   mixed   column value
+	 * @param   mixed   $column  column name or array($column, $alias) or object
+	 * @param   string  $op      logic operator
+	 * @param   mixed   $value   column value
 	 * @return  $this
 	 */
 	public function having($column, $op, $value = NULL)
@@ -1980,9 +1980,9 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Creates a new "AND HAVING" condition for the query.
 	 *
-	 * @param   mixed   column name or array($column, $alias) or object
-	 * @param   string  logic operator
-	 * @param   mixed   column value
+	 * @param   mixed   $column  column name or array($column, $alias) or object
+	 * @param   string  $op      logic operator
+	 * @param   mixed   $value   column value
 	 * @return  $this
 	 */
 	public function and_having($column, $op, $value = NULL)
@@ -1999,9 +1999,9 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Creates a new "OR HAVING" condition for the query.
 	 *
-	 * @param   mixed   column name or array($column, $alias) or object
-	 * @param   string  logic operator
-	 * @param   mixed   column value
+	 * @param   mixed   $column  column name or array($column, $alias) or object
+	 * @param   string  $op      logic operator
+	 * @param   mixed   $value   column value
 	 * @return  $this
 	 */
 	public function or_having($column, $op, $value = NULL)
@@ -2102,7 +2102,7 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Start returning results after "OFFSET ..."
 	 *
-	 * @param   integer   starting result number
+	 * @param   integer   $number  starting result number
 	 * @return  $this
 	 */
 	public function offset($number)
@@ -2119,7 +2119,7 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Enables the query to be cached for a specified amount of time.
 	 *
-	 * @param   integer  number of seconds to cache
+	 * @param   integer  $lifetime  number of seconds to cache
 	 * @return  $this
 	 * @uses    Kohana::$cache_life
 	 */
@@ -2137,8 +2137,8 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Set the value of a parameter in the query.
 	 *
-	 * @param   string   parameter key to replace
-	 * @param   mixed    value to use
+	 * @param   string   $param  parameter key to replace
+	 * @param   mixed    $value  value to use
 	 * @return  $this
 	 */
 	public function param($param, $value)
@@ -2156,8 +2156,8 @@ class Kohana_ORM extends Model implements serializable {
 	 * Checks whether a column value is unique.
 	 * Excludes itself if loaded.
 	 *
-	 * @param   string   the field to check for uniqueness
-	 * @param   mixed    the value to check for uniqueness
+	 * @param   string   $field  the field to check for uniqueness
+	 * @param   mixed    $value  the value to check for uniqueness
 	 * @return  bool     whteher the value is unique
 	 */
 	public function unique($field, $value)
