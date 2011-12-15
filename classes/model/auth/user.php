@@ -139,7 +139,7 @@ class Model_Auth_User extends ORM {
 	{
 		return Validation::factory($values)
 			->rule('password', 'min_length', array(':value', 8))
-			->rule('password_confirm', 'matches', array(':validation', ':field', 'password'));
+			->rule('password_confirm', 'matches', array(':validation', 'password', ':field'));
 	}
 
 	/**
