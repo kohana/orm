@@ -31,13 +31,13 @@ class Kohana_ORM_Validation_Exception extends Kohana_Exception {
 	 * @param  integer    $code        The error code for the exception
 	 * @return void
 	 */
-	public function __construct($alias, Validation $object, $message = 'Failed to validate array', array $values = NULL, $code = 0)
+	public function __construct($alias, Validation $object, $message = 'Failed to validate array', array $values = NULL, $code = 0, Exception $previous = NULL)
 	{
 		$this->_alias = $alias;
 		$this->_objects['_object'] = $object;
 		$this->_objects['_has_many'] = FALSE;
 
-		parent::__construct($message, $values, $code);
+		parent::__construct($message, $values, $code, $previous);
 	}
 
 	/**
