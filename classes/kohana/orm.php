@@ -632,8 +632,14 @@ class Kohana_ORM extends Model implements serializable {
 			// Use this model's column and foreign model's primary key
 			$col = $model->_table_name.'.'.$model->_primary_key;
 			$val = $this->_object[$this->_belongs_to[$column]['foreign_key']];
-
-			$model->where($col, '=', $val)->find();
+			
+			// Make sure we don't run WHERE "AUTO_INCREMENT column" = NULL queries. This would 
+			// return the last inserted record instead of an empty result.
+			// See: http://mysql.localhost.net.ar/doc/refman/5.1/en/server-session-variables.html#sysvar_sql_auto_is_null
+			if ($val !== NULL)
+			{
+				$model->where($col, '=', $val)->find();
+			}
 
 			return $this->_related[$column] = $model;
 		}
