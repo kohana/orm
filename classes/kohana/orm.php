@@ -562,8 +562,8 @@ class Kohana_ORM extends Model implements serializable {
 			// Use this model's column and foreign model's primary key
 			$col = $model->_object_name.'.'.$model->_primary_key;
 			$val = $this->_object[$this->_belongs_to[$column]['foreign_key']];
-			
-			// Make sure we don't run WHERE "AUTO_INCREMENT column" = NULL queries. This would 
+
+			// Make sure we don't run WHERE "AUTO_INCREMENT column" = NULL queries. This would
 			// return the last inserted record instead of an empty result.
 			// See: http://mysql.localhost.net.ar/doc/refman/5.1/en/server-session-variables.html#sysvar_sql_auto_is_null
 			if ($val !== NULL)
@@ -929,6 +929,24 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
+	 * Returns an array of columns to include in the select query. This method
+	 * can be overridden to change the default select behavior.
+	 *
+	 * @return array Columns to select
+	 */
+	protected function _build_select()
+	{
+		$columns = array();
+
+		foreach ($this->_table_columns as $column => $_)
+		{
+			$columns[] = array($this->_table_name.'.'.$column, $column);
+		}
+
+		return $columns;
+	}
+
+	/**
 	 * Loads a database result, either as a new record for this model, or as
 	 * an iterator for multiple rows.
 	 *
@@ -947,7 +965,7 @@ class Kohana_ORM extends Model implements serializable {
 		}
 
 		// Select all columns by default
-		$this->_db_builder->select($this->_object_name.'.*');
+		$this->_db_builder->select_array($this->_build_select());
 
 		if ( ! isset($this->_db_applied['order_by']) AND ! empty($this->_sorting))
 		{
