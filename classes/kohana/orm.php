@@ -562,8 +562,14 @@ class Kohana_ORM extends Model implements serializable {
 			// Use this model's column and foreign model's primary key
 			$col = $model->_object_name.'.'.$model->_primary_key;
 			$val = $this->_object[$this->_belongs_to[$column]['foreign_key']];
-
-			$model->where($col, '=', $val)->find();
+			
+			// Make sure we don't run WHERE "AUTO_INCREMENT column" = NULL queries. This would 
+			// return the last inserted record instead of an empty result.
+			// See: http://mysql.localhost.net.ar/doc/refman/5.1/en/server-session-variables.html#sysvar_sql_auto_is_null
+			if ($val !== NULL)
+			{
+				$model->where($col, '=', $val)->find();
+			}
 
 			return $this->_related[$column] = $model;
 		}
@@ -1195,7 +1201,7 @@ class Kohana_ORM extends Model implements serializable {
 			throw new Kohana_Exception('Cannot create :model model because it is already loaded.', array(':model' => $this->_object_name));
 
 		// Require model validation before saving
-		if ( ! $this->_valid)
+		if ( ! $this->_valid OR $validation)
 		{
 			$this->check($validation);
 		}
@@ -1249,16 +1255,16 @@ class Kohana_ORM extends Model implements serializable {
 		if ( ! $this->_loaded)
 			throw new Kohana_Exception('Cannot update :model model because it is not loaded.', array(':model' => $this->_object_name));
 
+		// Run validation if the model isn't valid or we have additional validation rules.
+		if ( ! $this->_valid OR $validation)
+		{
+			$this->check($validation);
+		}
+
 		if (empty($this->_changed))
 		{
 			// Nothing to update
 			return $this;
-		}
-
-		// Require model validation before saving
-		if ( ! $this->_valid)
-		{
-			$this->check($validation);
 		}
 
 		$data = array();
