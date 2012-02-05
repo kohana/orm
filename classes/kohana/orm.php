@@ -2233,6 +2233,23 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
+	 * Adds "USING ..." conditions for the last created JOIN statement.
+	 *
+	 * @param   string  $columns  column name
+	 * @return  $this
+	 */
+	public function using($columns)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'using',
+			'args' => array($columns),
+		);
+
+		return $this;
+	}
+
+	/**
 	 * Checks whether a column value is unique.
 	 * Excludes itself if loaded.
 	 *
