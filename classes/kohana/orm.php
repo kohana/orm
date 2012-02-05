@@ -1660,7 +1660,7 @@ class Kohana_ORM extends Model implements serializable {
 
 	protected function _unserialize_value($value)
 	{
-		return json_decode($value);
+		return json_decode($value, TRUE);
 	}
 
 	public function object_name()
