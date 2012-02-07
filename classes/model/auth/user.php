@@ -4,7 +4,7 @@
  *
  * @package    Kohana/Auth
  * @author     Kohana Team
- * @copyright  (c) 2007-2011 Kohana Team
+ * @copyright  (c) 2007-2012 Kohana Team
  * @license    http://kohanaframework.org/license
  */
 class Model_Auth_User extends ORM {
@@ -139,7 +139,7 @@ class Model_Auth_User extends ORM {
 	{
 		return Validation::factory($values)
 			->rule('password', 'min_length', array(':value', 8))
-			->rule('password_confirm', 'matches', array(':validation', ':field', 'password'));
+			->rule('password_confirm', 'matches', array(':validation', 'password', ':field'));
 	}
 
 	/**
