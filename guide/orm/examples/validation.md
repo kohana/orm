@@ -80,20 +80,21 @@ Please forgive my slightly ugly form. I am trying not to use any modules or unre
 	public function action_create()
 	{
 		$view = View::factory('members/create')
-			->set('values', $_POST)
+			->set('values', $this->request->post())
 			->bind('errors', $errors);
 
-		if ($_POST)
+		if ($this->request->method() === Request::POST)
 		{
 			$member = ORM::factory('member')
 				// The ORM::values() method is a shortcut to assign many values at once
-				->values($_POST, array('username', 'password'));
+				->values($this->request->post(), array('username', 'password'));
 
 			$external_values = array(
 				// The unhashed password is needed for comparing to the password_confirm field
-				'password' => Arr::get($_POST, 'password'),
+				'password' => $this->request->post('password'),
 			// Add all external values
-			) + Arr::get($_POST, '_external', array());
+			) + Arr::get($this->request->post(), '_external', array());
+			
 			$extra = Validation::factory($external_values)
 				->rule('password_confirm', 'matches', array(':validation', ':field', 'password'));
 

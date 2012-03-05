@@ -699,17 +699,8 @@ class Kohana_ORM extends Model implements serializable {
 	 * @param  array $expected Array of keys to take from $values
 	 * @return ORM
 	 */
-	public function values(array $values, array $expected = NULL)
+	public function values(array $values, array $expected)
 	{
-		// Default to expecting everything except the primary key
-		if ($expected === NULL)
-		{
-			$expected = array_keys($this->_table_columns);
-
-			// Don't set the primary key by default
-			unset($values[$this->_primary_key]);
-		}
-
 		foreach ($expected as $key => $column)
 		{
 			if (is_string($key))
