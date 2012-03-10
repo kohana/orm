@@ -940,7 +940,7 @@ class Kohana_ORM extends Model implements serializable {
 
 		foreach ($this->_table_columns as $column => $_)
 		{
-			$columns[] = array($this->_table_name.'.'.$column, $column);
+			$columns[] = array($this->_object_name.'.'.$column, $column);
 		}
 
 		return $columns;
