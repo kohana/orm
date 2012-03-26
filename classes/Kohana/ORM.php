@@ -20,6 +20,12 @@ class Kohana_ORM extends Model implements serializable {
 	 * @var array
 	 */
 	protected static $_column_cache = array();
+	
+	/**
+	 * Initialization storage for ORM models
+	 * @var array
+	 */
+	protected static $_init_cache = array();
 
 	/**
 	 * Creates and returns a new model.
@@ -282,57 +288,90 @@ class Kohana_ORM extends Model implements serializable {
 	{
 		// Set the object name and plural name
 		$this->_object_name = strtolower(substr(get_class($this), 6));
-		$this->_object_plural = Inflector::plural($this->_object_name);
-
-		if ( ! $this->_errors_filename)
+		
+		// Check if this model has already been initialized
+		if ( ! $init = Arr::get(ORM::$_init_cache, $this->_object_name, FALSE))
 		{
-			$this->_errors_filename = $this->_object_name;
-		}
-
-		if ( ! is_object($this->_db))
-		{
-			// Get database instance
-			$this->_db = Database::instance($this->_db_group);
-		}
-
-		if (empty($this->_table_name))
-		{
-			// Table name is the same as the object name
-			$this->_table_name = $this->_object_name;
-
-			if ($this->_table_names_plural === TRUE)
+			$init = array(
+				'_belongs_to' => array(),
+				'_has_one'    => array(),
+				'_has_many'   => array(),
+			);
+			
+			// Set the object plural name if none predefined
+			if ( ! isset($this->_object_plural))
 			{
-				// Make the table name plural
-				$this->_table_name = Inflector::plural($this->_table_name);
+				$init['_object_plural'] = Inflector::plural($this->_object_name);
 			}
-		}
 
-		foreach ($this->_belongs_to as $alias => $details)
+			if ( ! $this->_errors_filename)
+			{
+				$init['_errors_filename'] = $this->_object_name;
+			}
+
+			if ( ! is_object($this->_db))
+			{
+				// Get database instance
+				$init['_db'] = Database::instance($this->_db_group);
+			}
+
+			if (empty($this->_table_name))
+			{
+				// Table name is the same as the object name
+				$init['_table_name'] = $this->_object_name;
+
+				if ($this->_table_names_plural === TRUE)
+				{
+					// Make the table name plural
+					$init['_table_name'] = Arr::get($init, '_object_plural', $this->_object_plural);
+				}
+			}
+			
+			$defaults = array();
+
+			foreach ($this->_belongs_to as $alias => $details)
+			{
+				$defaults['model'] = $alias;
+				$defaults['foreign_key'] = $alias.$this->_foreign_key_suffix;
+
+				$init['_belongs_to'][$alias] = array_merge($defaults, $details);
+			}
+
+			foreach ($this->_has_one as $alias => $details)
+			{
+				$defaults['model'] = $alias;
+				$defaults['foreign_key'] = $this->_object_name.$this->_foreign_key_suffix;
+
+				$init['_has_one'][$alias] = array_merge($defaults, $details);
+			}
+
+			foreach ($this->_has_many as $alias => $details)
+			{
+				if ( ! isset($details['model']))
+				{
+					$defaults['model'] = Inflector::singular($alias);
+				}
+				
+				$defaults['foreign_key'] = $this->_object_name.$this->_foreign_key_suffix;
+				$defaults['through'] = NULL;
+				
+				if ( ! isset($details['far_key']))
+				{
+					$defaults['far_key'] = Inflector::singular($alias).$this->_foreign_key_suffix;
+				}
+				
+				$init['_has_many'][$alias] = array_merge($defaults, $details);
+			}
+			
+			ORM::$_init_cache[$this->_object_name] = $init;
+		}
+		
+		// Assign initialized properties to the current object
+		foreach ($init as $property => $value)
 		{
-			$defaults['model'] = $alias;
-			$defaults['foreign_key'] = $alias.$this->_foreign_key_suffix;
-
-			$this->_belongs_to[$alias] = array_merge($defaults, $details);
+			$this->{$property} = $value;
 		}
-
-		foreach ($this->_has_one as $alias => $details)
-		{
-			$defaults['model'] = $alias;
-			$defaults['foreign_key'] = $this->_object_name.$this->_foreign_key_suffix;
-
-			$this->_has_one[$alias] = array_merge($defaults, $details);
-		}
-
-		foreach ($this->_has_many as $alias => $details)
-		{
-			$defaults['model'] = Inflector::singular($alias);
-			$defaults['foreign_key'] = $this->_object_name.$this->_foreign_key_suffix;
-			$defaults['through'] = NULL;
-			$defaults['far_key'] = Inflector::singular($alias).$this->_foreign_key_suffix;
-
-			$this->_has_many[$alias] = array_merge($defaults, $details);
-		}
-
+		
 		// Load column information
 		$this->reload_columns();
 
