@@ -940,7 +940,7 @@ class Kohana_ORM extends Model implements serializable {
 
 		foreach ($this->_table_columns as $column => $_)
 		{
-			$columns[] = array($this->_table_name.'.'.$column, $column);
+			$columns[] = array($this->_object_name.'.'.$column, $column);
 		}
 
 		return $columns;
@@ -1362,7 +1362,9 @@ class Kohana_ORM extends Model implements serializable {
 
 	/**
 	 * Tests if this object has a relationship to a different model,
-	 * or an array of different models.
+	 * or an array of different models. When providing far keys, the number
+	 * of relations must equal the number of keys.
+	 * 
 	 *
 	 *     // Check if $model has the login role
 	 *     $model->has('roles', ORM::factory('role', array('name' => 'login')));
@@ -1375,13 +1377,67 @@ class Kohana_ORM extends Model implements serializable {
 	 *
 	 * @param  string  $alias    Alias of the has_many "through" relationship
 	 * @param  mixed   $far_keys Related model, primary key, or an array of primary keys
-	 * @return Database_Result
+	 * @return boolean
 	 */
 	public function has($alias, $far_keys = NULL)
 	{
+		$count = $this->count_relations($alias, $far_keys);
 		if ($far_keys === NULL)
 		{
-			return (bool) DB::select(array('COUNT("*")', 'records_found'))
+			return (bool) $count;
+		}
+		else
+		{
+			return $count === count($far_keys);
+		}
+
+	}
+
+	/**
+	 * Tests if this object has a relationship to a different model,
+	 * or an array of different models. When providing far keys, this function
+	 * only checks that at least one of the relationships is satisfied.
+	 *
+	 *     // Check if $model has the login role
+	 *     $model->has('roles', ORM::factory('role', array('name' => 'login')));
+	 *     // Check for the login role if you know the roles.id is 5
+	 *     $model->has('roles', 5);
+	 *     // Check for any of the following roles
+	 *     $model->has('roles', array(1, 2, 3, 4));
+	 *     // Check if $model has any roles
+	 *     $model->has('roles')
+	 *
+	 * @param  string  $alias    Alias of the has_many "through" relationship
+	 * @param  mixed   $far_keys Related model, primary key, or an array of primary keys
+	 * @return boolean
+	 */
+	public function has_any($alias, $far_keys = NULL)
+	{
+		return (bool) $this->count_relations($alias, $far_keys);
+	}
+
+	/**
+	 * Returns the number of relationships 
+	 *
+	 *     // Counts the number of times the login role is attached to $model
+	 *     $model->has('roles', ORM::factory('role', array('name' => 'login')));
+	 *     // Counts the number of times role 5 is attached to $model
+	 *     $model->has('roles', 5);
+	 *     // Counts the number of times any of roles 1, 2, 3, or 4 are attached to
+	 *     // $model
+	 *     $model->has('roles', array(1, 2, 3, 4));
+	 *     // Counts the number roles attached to $model
+	 *     $model->has('roles')
+	 *
+	 * @param  string  $alias    Alias of the has_many "through" relationship
+	 * @param  mixed   $far_keys Related model, primary key, or an array of primary keys
+	 * @return integer
+	 */
+	public function count_relations($alias, $far_keys = NULL)
+	{
+		if ($far_keys === NULL)
+		{
+			return (int) DB::select(array('COUNT("*")', 'records_found'))
 				->from($this->_has_many[$alias]['through'])
 				->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk())
 				->execute($this->_db)->get('records_found');
@@ -1394,7 +1450,7 @@ class Kohana_ORM extends Model implements serializable {
 
 		// Nothing to check if the model isn't loaded or we don't have any far_keys
 		if ( ! $far_keys OR ! $this->_loaded)
-			return FALSE;
+			return 0;
 
 		$count = (int) DB::select(array('COUNT("*")', 'records_found'))
 			->from($this->_has_many[$alias]['through'])
@@ -1403,7 +1459,7 @@ class Kohana_ORM extends Model implements serializable {
 			->execute($this->_db)->get('records_found');
 
 		// Rows found need to match the rows searched
-		return $count === count($far_keys);
+		return (int) $count;
 	}
 
 	/**
@@ -1604,7 +1660,7 @@ class Kohana_ORM extends Model implements serializable {
 
 	protected function _unserialize_value($value)
 	{
-		return json_decode($value);
+		return json_decode($value, TRUE);
 	}
 
 	public function object_name()
@@ -2171,6 +2227,23 @@ class Kohana_ORM extends Model implements serializable {
 		$this->_db_pending[] = array(
 			'name' => 'param',
 			'args' => array($param, $value),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Adds "USING ..." conditions for the last created JOIN statement.
+	 *
+	 * @param   string  $columns  column name
+	 * @return  $this
+	 */
+	public function using($columns)
+	{
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => 'using',
+			'args' => array($columns),
 		);
 
 		return $this;
