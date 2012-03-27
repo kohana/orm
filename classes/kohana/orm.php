@@ -533,7 +533,7 @@ class Kohana_ORM extends Model implements serializable {
 	 * Allows serialization of only the object data and state, to prevent
 	 * "stale" objects being unserialized, which also requires less memory.
 	 *
-	 * @return array
+	 * @return string
 	 */
 	public function serialize()
 	{
