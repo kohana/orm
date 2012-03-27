@@ -214,7 +214,13 @@ class Kohana_Auth_ORM extends Auth {
 
 			if ($token->loaded() AND $logout_all)
 			{
-				ORM::factory('user_token')->where('user_id', '=', $token->user_id)->delete_all();
+				// Delete all user tokens. This isn't the most elegant solution but does the job
+				$tokens = ORM::factory('user_token')->where('user_id','=',$token->user_id)->find_all();
+				
+				foreach ($tokens as $_token)
+				{
+					$_token->delete();
+				}
 			}
 			elseif ($token->loaded())
 			{
