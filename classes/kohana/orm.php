@@ -1402,7 +1402,7 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Deletes a single record or multiple records, ignoring relationships.
+	 * Deletes a single record while ignoring relationships.
 	 *
 	 * @chainable
 	 * @return ORM
