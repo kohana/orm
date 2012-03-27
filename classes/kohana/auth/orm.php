@@ -174,19 +174,20 @@ class Kohana_Auth_ORM extends Auth {
 
 	/**
 	 * Gets the currently logged in user from the session (with auto_login check).
-	 * Returns FALSE if no user is currently logged in.
+	 * Returns $default if no user is currently logged in.
 	 *
-	 * @param   mixed    $default
+	 * @param   mixed    $default to return in case user isn't logged in
 	 * @return  mixed
 	 */
 	public function get_user($default = NULL)
 	{
 		$user = parent::get_user($default);
 
-		if ( ! $user)
+		if ($user === $default)
 		{
 			// check for "remembered" login
-			$user = $this->auto_login();
+			if (($user = $this->auto_login()) === FALSE)
+				return $default;
 		}
 
 		return $user;
