@@ -49,7 +49,6 @@
  * @property bool $loaded ORM object was loaded?
  * @property bool $saved ORM object was saved?
  * @property mixed $primary_key
- * @property mixed $primary_val
  * @property string $table_name
  * @property string $table_columns
  * @property array $has_one
@@ -87,7 +86,7 @@ class Kohana_ORM extends Model implements serializable {
 	protected static $_properties = array
 	(
 		'object_name', 'object_plural', 'loaded', 'saved', // Object
-		'primary_key', 'primary_val', 'table_name', 'table_columns', // Table
+		'primary_key', 'table_name', 'table_columns', // Table
 		'has_one', 'belongs_to', 'has_many', 'has_many_through', 'load_with', // Relationships
 		'updated_column', 'created_column',
 		'validation',
