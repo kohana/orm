@@ -577,11 +577,24 @@ class Kohana_ORM extends Model implements serializable {
 
 	/**
 	 * Handles retrieval of all model values, relationships, and metadata.
+	 * [!!] This should not be overridden.
 	 *
 	 * @param   string $column Column name
 	 * @return  mixed
 	 */
 	public function __get($column)
+	{
+		return $this->get($column);
+	}
+	
+	/**
+	 * Handles getting of column
+	 * Override this method to add custom get behavior
+	 *
+	 * @param   string $column Column name
+	 * @return mixed
+	 */
+	public function get($column)
 	{
 		if (array_key_exists($column, $this->_object))
 		{
@@ -660,7 +673,8 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Base set method - this should not be overridden.
+	 * Base set method.
+	 * [!!] This should not be overridden.
 	 *
 	 * @param  string $column  Column name
 	 * @param  mixed  $value   Column value
@@ -668,20 +682,12 @@ class Kohana_ORM extends Model implements serializable {
 	 */
 	public function __set($column, $value)
 	{
-		if ( ! isset($this->_object_name))
-		{
-			// Object not yet constructed, so we're loading data from a database call cast
-			$this->_cast_data[$column] = $value;
-		}
-		else
-		{
-			// Set the model's column to given value
-			$this->set($column, $value);
-		}
+		$this->set($column, $value);
 	}
 
 	/**
-	 * Handles setting of column
+	 * Handles setting of columns
+	 * Override this method to add custom set behavior
 	 *
 	 * @param  string $column Column name
 	 * @param  mixed  $value  Column value
@@ -689,6 +695,14 @@ class Kohana_ORM extends Model implements serializable {
 	 */
 	public function set($column, $value)
 	{
+		if ( ! isset($this->_object_name))
+		{
+			// Object not yet constructed, so we're loading data from a database call cast
+			$this->_cast_data[$column] = $value;
+			
+			return $this;
+		}
+		
 		if (in_array($column, $this->_serialize_columns))
 		{
 			$value = $this->_serialize_value($value);
