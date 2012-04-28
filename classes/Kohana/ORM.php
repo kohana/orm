@@ -28,7 +28,10 @@ class Kohana_ORM extends Model implements serializable {
 	protected static $_init_cache = array();
 
 	/**
-	 * Creates and returns a new model.
+	 * Creates and returns a new model. 
+	 * Model name must be passed with its' original casing, e.g.
+	 * 
+	 *    $model = ORM::factory('User_Token');
 	 *
 	 * @chainable
 	 * @param   string  $model  Model name
@@ -38,7 +41,7 @@ class Kohana_ORM extends Model implements serializable {
 	public static function factory($model, $id = NULL)
 	{
 		// Set class name
-		$model = 'Model_'.ucfirst($model);
+		$model = 'Model_'.$model;
 
 		return new $model($id);
 	}
@@ -331,7 +334,11 @@ class Kohana_ORM extends Model implements serializable {
 
 			foreach ($this->_belongs_to as $alias => $details)
 			{
-				$defaults['model'] = $alias;
+				if ( ! isset($details['model']))
+				{
+					$defaults['model'] = str_replace(' ', '_', ucwords(str_replace('_', ' ', $alias)));
+				}
+				
 				$defaults['foreign_key'] = $alias.$this->_foreign_key_suffix;
 
 				$init['_belongs_to'][$alias] = array_merge($defaults, $details);
@@ -339,7 +346,11 @@ class Kohana_ORM extends Model implements serializable {
 
 			foreach ($this->_has_one as $alias => $details)
 			{
-				$defaults['model'] = $alias;
+				if ( ! isset($details['model']))
+				{
+					$defaults['model'] = str_replace(' ', '_', ucwords(str_replace('_', ' ', $alias)));
+				}
+				
 				$defaults['foreign_key'] = $this->_object_name.$this->_foreign_key_suffix;
 
 				$init['_has_one'][$alias] = array_merge($defaults, $details);
@@ -349,7 +360,7 @@ class Kohana_ORM extends Model implements serializable {
 			{
 				if ( ! isset($details['model']))
 				{
-					$defaults['model'] = Inflector::singular($alias);
+					$defaults['model'] = str_replace(' ', '_', ucwords(str_replace('_', ' ', Inflector::singular($alias))));
 				}
 				
 				$defaults['foreign_key'] = $this->_object_name.$this->_foreign_key_suffix;
