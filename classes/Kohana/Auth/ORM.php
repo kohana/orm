@@ -151,7 +151,7 @@ class Kohana_Auth_ORM extends Auth {
 		if ($token = Cookie::get('authautologin'))
 		{
 			// Load the token and user
-			$token = ORM::factory('user_token', array('token' => $token));
+			$token = ORM::factory('User_Token', array('token' => $token));
 
 			if ($token->loaded() AND $token->user->loaded())
 			{
@@ -217,12 +217,12 @@ class Kohana_Auth_ORM extends Auth {
 			Cookie::delete('authautologin');
 
 			// Clear the autologin token from the database
-			$token = ORM::factory('user_token', array('token' => $token));
+			$token = ORM::factory('User_Token', array('token' => $token));
 
 			if ($token->loaded() AND $logout_all)
 			{
 				// Delete all user tokens. This isn't the most elegant solution but does the job
-				$tokens = ORM::factory('user_token')->where('user_id','=',$token->user_id)->find_all();
+				$tokens = ORM::factory('User_Token')->where('user_id','=',$token->user_id)->find_all();
 				
 				foreach ($tokens as $_token)
 				{
