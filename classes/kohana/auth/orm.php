@@ -180,19 +180,20 @@ class Kohana_Auth_ORM extends Auth {
 
 	/**
 	 * Gets the currently logged in user from the session (with auto_login check).
-	 * Returns FALSE if no user is currently logged in.
+	 * Returns $default if no user is currently logged in.
 	 *
-	 * @param   mixed    $default
+	 * @param   mixed    $default to return in case user isn't logged in
 	 * @return  mixed
 	 */
 	public function get_user($default = NULL)
 	{
 		$user = parent::get_user($default);
 
-		if ( ! $user)
+		if ($user === $default)
 		{
 			// check for "remembered" login
-			$user = $this->auto_login();
+			if (($user = $this->auto_login()) === FALSE)
+				return $default;
 		}
 
 		return $user;
@@ -220,7 +221,13 @@ class Kohana_Auth_ORM extends Auth {
 
 			if ($token->loaded() AND $logout_all)
 			{
-				ORM::factory('user_token')->where('user_id', '=', $token->user_id)->delete_all();
+				// Delete all user tokens. This isn't the most elegant solution but does the job
+				$tokens = ORM::factory('user_token')->where('user_id','=',$token->user_id)->find_all();
+				
+				foreach ($tokens as $_token)
+				{
+					$_token->delete();
+				}
 			}
 			elseif ($token->loaded())
 			{

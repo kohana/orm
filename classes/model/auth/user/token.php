@@ -11,6 +11,11 @@ class Model_Auth_User_Token extends ORM {
 
 	// Relationships
 	protected $_belongs_to = array('user' => array());
+	
+	protected $_created_column = array(
+		'column' => 'created',
+		'format' => TRUE,
+	);
 
 	/**
 	 * Handles garbage collection and deleting of expired objects.
