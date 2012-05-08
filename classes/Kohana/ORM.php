@@ -28,7 +28,10 @@ class Kohana_ORM extends Model implements serializable {
 	protected static $_init_cache = array();
 
 	/**
-	 * Creates and returns a new model.
+	 * Creates and returns a new model. 
+	 * Model name must be passed with its' original casing, e.g.
+	 * 
+	 *    $model = ORM::factory('User_Token');
 	 *
 	 * @chainable
 	 * @param   string  $model  Model name
@@ -38,7 +41,7 @@ class Kohana_ORM extends Model implements serializable {
 	public static function factory($model, $id = NULL)
 	{
 		// Set class name
-		$model = 'Model_'.ucfirst($model);
+		$model = 'Model_'.$model;
 
 		return new $model($id);
 	}
@@ -331,7 +334,11 @@ class Kohana_ORM extends Model implements serializable {
 
 			foreach ($this->_belongs_to as $alias => $details)
 			{
-				$defaults['model'] = $alias;
+				if ( ! isset($details['model']))
+				{
+					$defaults['model'] = str_replace(' ', '_', ucwords(str_replace('_', ' ', $alias)));
+				}
+				
 				$defaults['foreign_key'] = $alias.$this->_foreign_key_suffix;
 
 				$init['_belongs_to'][$alias] = array_merge($defaults, $details);
@@ -339,7 +346,11 @@ class Kohana_ORM extends Model implements serializable {
 
 			foreach ($this->_has_one as $alias => $details)
 			{
-				$defaults['model'] = $alias;
+				if ( ! isset($details['model']))
+				{
+					$defaults['model'] = str_replace(' ', '_', ucwords(str_replace('_', ' ', $alias)));
+				}
+				
 				$defaults['foreign_key'] = $this->_object_name.$this->_foreign_key_suffix;
 
 				$init['_has_one'][$alias] = array_merge($defaults, $details);
@@ -349,7 +360,7 @@ class Kohana_ORM extends Model implements serializable {
 			{
 				if ( ! isset($details['model']))
 				{
-					$defaults['model'] = Inflector::singular($alias);
+					$defaults['model'] = str_replace(' ', '_', ucwords(str_replace('_', ' ', Inflector::singular($alias))));
 				}
 				
 				$defaults['foreign_key'] = $this->_object_name.$this->_foreign_key_suffix;
@@ -577,11 +588,24 @@ class Kohana_ORM extends Model implements serializable {
 
 	/**
 	 * Handles retrieval of all model values, relationships, and metadata.
+	 * [!!] This should not be overridden.
 	 *
 	 * @param   string $column Column name
 	 * @return  mixed
 	 */
 	public function __get($column)
+	{
+		return $this->get($column);
+	}
+	
+	/**
+	 * Handles getting of column
+	 * Override this method to add custom get behavior
+	 *
+	 * @param   string $column Column name
+	 * @return mixed
+	 */
+	public function get($column)
 	{
 		if (array_key_exists($column, $this->_object))
 		{
@@ -660,7 +684,8 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Base set method - this should not be overridden.
+	 * Base set method.
+	 * [!!] This should not be overridden.
 	 *
 	 * @param  string $column  Column name
 	 * @param  mixed  $value   Column value
@@ -668,20 +693,12 @@ class Kohana_ORM extends Model implements serializable {
 	 */
 	public function __set($column, $value)
 	{
-		if ( ! isset($this->_object_name))
-		{
-			// Object not yet constructed, so we're loading data from a database call cast
-			$this->_cast_data[$column] = $value;
-		}
-		else
-		{
-			// Set the model's column to given value
-			$this->set($column, $value);
-		}
+		$this->set($column, $value);
 	}
 
 	/**
-	 * Handles setting of column
+	 * Handles setting of columns
+	 * Override this method to add custom set behavior
 	 *
 	 * @param  string $column Column name
 	 * @param  mixed  $value  Column value
@@ -689,6 +706,14 @@ class Kohana_ORM extends Model implements serializable {
 	 */
 	public function set($column, $value)
 	{
+		if ( ! isset($this->_object_name))
+		{
+			// Object not yet constructed, so we're loading data from a database call cast
+			$this->_cast_data[$column] = $value;
+			
+			return $this;
+		}
+		
 		if (in_array($column, $this->_serialize_columns))
 		{
 			$value = $this->_serialize_value($value);

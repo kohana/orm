@@ -15,8 +15,8 @@ class Model_Auth_User extends ORM {
 	 * @var array Relationhips
 	 */
 	protected $_has_many = array(
-		'user_tokens' => array('model' => 'user_token'),
-		'roles'       => array('model' => 'role', 'through' => 'roles_users'),
+		'user_tokens' => array('model' => 'User_Token'),
+		'roles'       => array('model' => 'Role', 'through' => 'roles_users'),
 	);
 
 	/**
@@ -147,7 +147,7 @@ class Model_Auth_User extends ORM {
 	 *
 	 * Example usage:
 	 * ~~~
-	 * $user = ORM::factory('user')->create_user($_POST, array(
+	 * $user = ORM::factory('User')->create_user($_POST, array(
 	 *	'username',
 	 *	'password',
 	 *	'email',
@@ -174,7 +174,7 @@ class Model_Auth_User extends ORM {
 	 *
 	 * Example usage:
 	 * ~~~
-	 * $user = ORM::factory('user')
+	 * $user = ORM::factory('User')
 	 *	->where('username', '=', 'kiall')
 	 *	->find()
 	 *	->update_user($_POST, array(
