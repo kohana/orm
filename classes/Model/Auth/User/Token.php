@@ -1,4 +1,4 @@
-<?php defined('SYSPATH') or die('No direct access allowed.');
+<?php defined('SYSPATH') OR die('No direct access allowed.');
 /**
  * Default auth user toke
  *
@@ -69,7 +69,7 @@ class Model_Auth_User_Token extends ORM {
 		{
 			$token = sha1(uniqid(Text::random('alnum', 32), TRUE));
 		}
-		while(ORM::factory('User_Token', array('token' => $token))->loaded());
+		while (ORM::factory('User_Token', array('token' => $token))->loaded());
 
 		return $token;
 	}
