@@ -32,7 +32,7 @@ class Kohana_Auth_ORM extends Auth {
 			if (is_array($role))
 			{
 				// Get all the roles
-				$roles = ORM::factory('role')
+				$roles = ORM::factory('Role')
 							->where('name', 'IN', $role)
 							->find_all()
 							->as_array(NULL, 'id');
@@ -46,7 +46,7 @@ class Kohana_Auth_ORM extends Auth {
 				if ( ! is_object($role))
 				{
 					// Load the role
-					$roles = ORM::factory('role', array('name' => $role));
+					$roles = ORM::factory('Role', array('name' => $role));
 
 					if ( ! $roles->loaded())
 						return FALSE;
@@ -72,7 +72,7 @@ class Kohana_Auth_ORM extends Auth {
 			$username = $user;
 
 			// Load the user
-			$user = ORM::factory('user');
+			$user = ORM::factory('User');
 			$user->where($user->unique_key($username), '=', $username)->find();
 		}
 
@@ -83,7 +83,7 @@ class Kohana_Auth_ORM extends Auth {
 		}
 
 		// If the passwords match, perform a login
-		if ($user->has('roles', ORM::factory('role', array('name' => 'login'))) AND $user->password === $password)
+		if ($user->has('roles', ORM::factory('Role', array('name' => 'login'))) AND $user->password === $password)
 		{
 			if ($remember === TRUE)
 			{
@@ -95,7 +95,7 @@ class Kohana_Auth_ORM extends Auth {
 				);
 
 				// Create a new autologin token
-				$token = ORM::factory('user_token')
+				$token = ORM::factory('User_Token')
 							->values($data)
 							->create();
 
@@ -127,7 +127,7 @@ class Kohana_Auth_ORM extends Auth {
 			$username = $user;
 
 			// Load the user
-			$user = ORM::factory('user');
+			$user = ORM::factory('User');
 			$user->where($user->unique_key($username), '=', $username)->find();
 		}
 
@@ -251,7 +251,7 @@ class Kohana_Auth_ORM extends Auth {
 			$username = $user;
 
 			// Load the user
-			$user = ORM::factory('user');
+			$user = ORM::factory('User');
 			$user->where($user->unique_key($username), '=', $username)->find();
 		}
 
