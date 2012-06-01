@@ -389,7 +389,7 @@ class Kohana_ORM extends Model implements serializable {
 			else
 			{
 				// Grab column information from database
-				$this->_table_columns = $this->list_columns(TRUE);
+				$this->_table_columns = $this->list_columns();
 
 				// Load column cache
 				ORM::$_column_cache[$this->_object_name] = $this->_table_columns;
