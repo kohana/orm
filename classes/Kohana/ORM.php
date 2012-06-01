@@ -439,7 +439,7 @@ class Kohana_ORM extends Model implements serializable {
 			else
 			{
 				// Grab column information from database
-				$this->_table_columns = $this->list_columns(TRUE);
+				$this->_table_columns = $this->list_columns();
 
 				// Load column cache
 				ORM::$_column_cache[$this->_object_name] = $this->_table_columns;
@@ -539,7 +539,7 @@ class Kohana_ORM extends Model implements serializable {
 	 * Allows serialization of only the object data and state, to prevent
 	 * "stale" objects being unserialized, which also requires less memory.
 	 *
-	 * @return array
+	 * @return string
 	 */
 	public function serialize()
 	{
@@ -1406,7 +1406,7 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Deletes a single record or multiple records, ignoring relationships.
+	 * Deletes a single record while ignoring relationships.
 	 *
 	 * @chainable
 	 * @return ORM
