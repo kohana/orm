@@ -468,6 +468,9 @@ class Kohana_ORM extends Model implements serializable {
 
 		// Reset primary key
 		$this->_primary_key_value = NULL;
+		
+		// Reset the loaded state
+		$this->_loaded = FALSE;
 
 		$this->reset();
 
