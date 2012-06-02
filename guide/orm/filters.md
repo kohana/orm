@@ -1,25 +1,25 @@
 # Filters
 
-Filters in the ORM work much like they used to when they were part of the Validate class in 3.0.x however they have been modified to match the flexible syntax of [Validation] rules in 3.1.x. Filters run as soon as the field is set in your model and should be used to format the data before it is inserted into the Database.
+Filters in ORM work much like they used to when they were part of the Validate class in 3.0.x. However, they have been modified to match the flexible syntax of [Validation] rules in 3.1.x.
 
-Define your filters the same way you define rules, as an array returned by the `ORM::filters()` method like the following:
+Filters run as soon as the field is set in your model and should be used to format the data before it is inserted into the Database. Filters are defined the same way you define [rules](validation), as an array returned by the `ORM::filters()` method, like the following:
 
 	public function filters()
 	{
 		return array(
 			// Field Filters
 			// $field_name => array(mixed $callback[, array $params = array(':value')]),
-			'username' => array( 
+			'username' => array(
 				// PHP Function Callback, default implicit param of ':value'
 				array('trim'),
 			),
 			'password' => array(
 				// Callback method with object context and params
-				array(array($this, 'hash_password'), array(':value', Model_User::salt())), 
+				array(array($this, 'hash_password'), array(':value', Model_User::salt())),
 			),
-			'created_on' => array( 	
+			'created_on' => array(
 				// Callback static method with params
-				array('Format::date', array(':value', 'Y-m-d H:i:s')), 
+				array('Format::date', array(':value', 'Y-m-d H:i:s')),
 			),
 			'other_field' => array(
 				// Callback static method with implicit param of ':value'
@@ -37,6 +37,5 @@ Define your filters the same way you define rules, as an array returned by the `
 
 		);
 	}
-	
 
 [!!] When defining filters, you may use the parameters `:value`, `:field`, and `:model` to refer to the field value, field name, and the model instance respectively.
