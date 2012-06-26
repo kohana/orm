@@ -38,7 +38,8 @@ CREATE TABLE IF NOT EXISTS `user_tokens` (
   `expires` int(10) UNSIGNED NOT NULL,
   PRIMARY KEY  (`id`),
   UNIQUE KEY `uniq_token` (`token`),
-  KEY `fk_user_id` (`user_id`)
+  KEY `fk_user_id` (`user_id`),
+  KEY `expires` (`expires`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
 ALTER TABLE `roles_users`

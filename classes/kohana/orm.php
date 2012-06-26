@@ -1,4 +1,4 @@
-<?php defined('SYSPATH') or die('No direct script access.');
+<?php defined('SYSPATH') OR die('No direct script access.');
 /**
  * [Object Relational Mapping][ref-orm] (ORM) is a method of abstracting database
  * access to standard PHP calls. All table rows are represented as model objects,
@@ -10,7 +10,7 @@
  *
  * @package    Kohana/ORM
  * @author     Kohana Team
- * @copyright  (c) 2007-2010 Kohana Team
+ * @copyright  (c) 2007-2012 Kohana Team
  * @license    http://kohanaframework.org/license
  *
  *
@@ -49,7 +49,6 @@
  * @property bool $loaded ORM object was loaded?
  * @property bool $saved ORM object was saved?
  * @property mixed $primary_key
- * @property mixed $primary_val
  * @property string $table_name
  * @property string $table_columns
  * @property array $has_one
@@ -87,7 +86,7 @@ class Kohana_ORM extends Model implements serializable {
 	protected static $_properties = array
 	(
 		'object_name', 'object_plural', 'loaded', 'saved', // Object
-		'primary_key', 'primary_val', 'table_name', 'table_columns', // Table
+		'primary_key', 'table_name', 'table_columns', // Table
 		'has_one', 'belongs_to', 'has_many', 'has_many_through', 'load_with', // Relationships
 		'updated_column', 'created_column',
 		'validation',
@@ -436,7 +435,7 @@ class Kohana_ORM extends Model implements serializable {
 			else
 			{
 				// Grab column information from database
-				$this->_table_columns = $this->list_columns(TRUE);
+				$this->_table_columns = $this->list_columns();
 
 				// Load column cache
 				ORM::$_column_cache[$this->_object_name] = $this->_table_columns;
@@ -465,6 +464,9 @@ class Kohana_ORM extends Model implements serializable {
 
 		// Reset primary key
 		$this->_primary_key_value = NULL;
+		
+		// Reset the loaded state
+		$this->_loaded = FALSE;
 
 		$this->reset();
 
@@ -533,7 +535,7 @@ class Kohana_ORM extends Model implements serializable {
 	 * Allows serialization of only the object data and state, to prevent
 	 * "stale" objects being unserialized, which also requires less memory.
 	 *
-	 * @return array
+	 * @return string
 	 */
 	public function serialize()
 	{
@@ -633,7 +635,13 @@ class Kohana_ORM extends Model implements serializable {
 			$col = $model->_table_name.'.'.$model->_primary_key;
 			$val = $this->_object[$this->_belongs_to[$column]['foreign_key']];
 
-			$model->where($col, '=', $val)->find();
+			// Make sure we don't run WHERE "AUTO_INCREMENT column" = NULL queries. This would
+			// return the last inserted record instead of an empty result.
+			// See: http://mysql.localhost.net.ar/doc/refman/5.1/en/server-session-variables.html#sysvar_sql_auto_is_null
+			if ($val !== NULL)
+			{
+				$model->where($col, '=', $val)->find();
+			}
 
 			return $this->_related[$column] = $model;
 		}
@@ -988,6 +996,24 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
+	 * Returns an array of columns to include in the select query. This method
+	 * can be overridden to change the default select behavior.
+	 *
+	 * @return array Columns to select
+	 */
+	protected function _build_select()
+	{
+		$columns = array();
+
+		foreach ($this->_table_columns as $column => $_)
+		{
+			$columns[] = array($this->_table_name.'.'.$column, $column);
+		}
+
+		return $columns;
+	}
+
+	/**
 	 * Loads a database result, either as a new record for this model, or as
 	 * an iterator for multiple rows.
 	 *
@@ -1006,7 +1032,7 @@ class Kohana_ORM extends Model implements serializable {
 		}
 
 		// Select all columns by default
-		$this->_db_builder->select($this->_table_name.'.*');
+		$this->_db_builder->select_array($this->_build_select());
 
 		if ( ! isset($this->_db_applied['order_by']) AND ! empty($this->_sorting))
 		{
@@ -1254,7 +1280,7 @@ class Kohana_ORM extends Model implements serializable {
 			throw new Kohana_Exception('Cannot create :model model because it is already loaded.', array(':model' => $this->_object_name));
 
 		// Require model validation before saving
-		if ( ! $this->_valid)
+		if ( ! $this->_valid OR $validation)
 		{
 			$this->check($validation);
 		}
@@ -1313,16 +1339,16 @@ class Kohana_ORM extends Model implements serializable {
 		if ( ! $this->_loaded)
 			throw new Kohana_Exception('Cannot update :model model because it is not loaded.', array(':model' => $this->_object_name));
 
+		// Run validation if the model isn't valid or we have additional validation rules.
+		if ( ! $this->_valid OR $validation)
+		{
+			$this->check($validation);
+		}
+
 		if (empty($this->_changed))
 		{
 			// Nothing to update
 			return $this;
-		}
-
-		// Require model validation before saving
-		if ( ! $this->_valid)
-		{
-			$this->check($validation);
 		}
 
 		$data = array();
@@ -1378,7 +1404,7 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Deletes a single record or multiple records, ignoring relationships.
+	 * Deletes a single record while ignoring relationships.
 	 *
 	 * @chainable
 	 * @return ORM
