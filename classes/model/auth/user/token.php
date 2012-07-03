@@ -4,13 +4,18 @@
  *
  * @package    Kohana/Auth
  * @author     Kohana Team
- * @copyright  (c) 2007-2011 Kohana Team
+ * @copyright  (c) 2007-2012 Kohana Team
  * @license    http://kohanaframework.org/license
  */
 class Model_Auth_User_Token extends ORM {
 
 	// Relationships
 	protected $_belongs_to = array('user' => array());
+	
+	protected $_created_column = array(
+		'column' => 'created',
+		'format' => TRUE,
+	);
 
 	/**
 	 * Handles garbage collection and deleting of expired objects.
