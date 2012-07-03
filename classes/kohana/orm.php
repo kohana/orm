@@ -139,14 +139,17 @@ class Kohana_ORM extends Model implements serializable {
 	protected $_table_columns;
 
 	/**
-	 * Auto-update columns for updates
-	 * @var string
+	 * Auto-update column name & format for updates. 
+	 * @see $_created_column
+	 * @var mixed An `array` with 'column' and 'format' keys and values or NULL for no auto update column
 	 */
 	protected $_updated_column = NULL;
 
 	/**
-	 * Auto-update columns for creation
-	 * @var string
+	 * Auto-update column name & format for creation. If 'format' is TRUE, the 
+	 * php 'time()' method will be used, otherwise the 'format' will be passed 
+	 * as the format parameter to the php 'date()' function.
+	 * @var mixed An `array` with 'column' and 'format' keys and values or NULL for no auto update column
 	 */
 	protected $_created_column = NULL;
 
