@@ -544,7 +544,7 @@ class Kohana_ORM extends Model implements serializable {
 	 */
 	public function __get($column)
 	{
-		if (array_key_exists($column, $this->_object))
+		if (isset($this->_object[$column]) OR array_key_exists($column, $this->_object))
 		{
 			return (in_array($column, $this->_serialize_columns))
 				? $this->_unserialize_value($this->_object[$column])
