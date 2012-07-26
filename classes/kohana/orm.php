@@ -681,7 +681,9 @@ class Kohana_ORM extends Model implements serializable {
 			$this->_related[$column] = $value;
 
 			// Update the foreign key of this model
-			$this->_object[$this->_belongs_to[$column]['foreign_key']] = $value->pk();
+			$this->_object[$this->_belongs_to[$column]['foreign_key']] = ($value instanceof ORM)
+				? $value->pk()
+				: NULL;
 
 			$this->_changed[$column] = $this->_belongs_to[$column]['foreign_key'];
 		}
