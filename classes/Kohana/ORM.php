@@ -929,7 +929,8 @@ class Kohana_ORM extends Model implements serializable {
 				$this->_db_builder = DB::update(array($this->_table_name, $this->_object_name));
 			break;
 			case Database::DELETE:
-				$this->_db_builder = DB::delete(array($this->_table_name, $this->_object_name));
+				// Cannot use an alias for DELETE queries
+				$this->_db_builder = DB::delete($this->_table_name);
 		}
 
 		// Process pending database method calls
