@@ -1318,6 +1318,10 @@ class Kohana_ORM extends Model implements serializable {
 			// Load the insert id as the primary key if it was left out
 			$this->_object[$this->_primary_key] = $this->_primary_key_value = $result[0];
 		}
+		else
+		{
+			$this->_primary_key_value = $this->_object[$this->_primary_key];
+		}
 
 		// Object is now loaded and saved
 		$this->_loaded = $this->_saved = TRUE;
