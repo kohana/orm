@@ -1385,7 +1385,7 @@ class Kohana_ORM extends Model implements serializable {
 	 *
 	 * @param  string  $alias    Alias of the has_many "through" relationship
 	 * @param  mixed   $far_keys Related model, primary key, or an array of primary keys
-	 * @return Database_Result
+	 * @return bool
 	 */
 	public function has($alias, $far_keys = NULL)
 	{
