@@ -221,7 +221,7 @@ class Kohana_ORM extends Model implements serializable {
 
 	/**
 	 * Database query builder
-	 * @var Database_Query_Builder_Where
+	 * @var Database_Query_Builder_Select
 	 */
 	protected $_db_builder;
 
@@ -248,7 +248,6 @@ class Kohana_ORM extends Model implements serializable {
 	 * Constructs a new model and loads a record if given
 	 *
 	 * @param   mixed $id Parameter for find or object to load
-	 * @return  void
 	 */
 	public function __construct($id = NULL)
 	{
@@ -606,6 +605,7 @@ class Kohana_ORM extends Model implements serializable {
 	 * Override this method to add custom get behavior
 	 *
 	 * @param   string $column Column name
+	 * @throws Kohana_Exception
 	 * @return mixed
 	 */
 	public function get($column)
@@ -705,7 +705,8 @@ class Kohana_ORM extends Model implements serializable {
 	 *
 	 * @param  string $column Column name
 	 * @param  mixed  $value  Column value
-	 * @return void
+	 * @throws Kohana_Exception
+	 * @return ORM
 	 */
 	public function set($column, $value)
 	{
@@ -834,7 +835,7 @@ class Kohana_ORM extends Model implements serializable {
 	 * can be nested using 'object1:object2' syntax
 	 *
 	 * @param  string $target_path Target model to bind to
-	 * @return void
+	 * @return ORM
 	 */
 	public function with($target_path)
 	{
@@ -953,6 +954,7 @@ class Kohana_ORM extends Model implements serializable {
 	 * Finds and loads a single database row into the object.
 	 *
 	 * @chainable
+	 * @throws Kohana_Exception
 	 * @return ORM
 	 */
 	public function find()
@@ -977,6 +979,7 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Finds multiple database rows and returns an iterator of the rows found.
 	 *
+	 * @throws Kohana_Exception
 	 * @return Database_Result
 	 */
 	public function find_all()
@@ -1251,6 +1254,7 @@ class Kohana_ORM extends Model implements serializable {
 	 * Validates the current model's data
 	 *
 	 * @param  Validation $extra_validation Validation object
+	 * @throws ORM_Validation_Exception
 	 * @return ORM
 	 */
 	public function check(Validation $extra_validation = NULL)
@@ -1281,6 +1285,7 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Insert a new object to the database
 	 * @param  Validation $validation Validation object
+	 * @throws Kohana_Exception
 	 * @return ORM
 	 */
 	public function create(Validation $validation = NULL)
@@ -1340,6 +1345,7 @@ class Kohana_ORM extends Model implements serializable {
 	 *
 	 * @chainable
 	 * @param  Validation $validation Validation object
+	 * @throws Kohana_Exception
 	 * @return ORM
 	 */
 	public function update(Validation $validation = NULL)
@@ -1416,6 +1422,7 @@ class Kohana_ORM extends Model implements serializable {
 	 * Deletes a single record while ignoring relationships.
 	 *
 	 * @chainable
+	 * @throws Kohana_Exception
 	 * @return ORM
 	 */
 	public function delete()
@@ -2082,7 +2089,7 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Adds "ON ..." conditions for the last created JOIN statement.
 	 *
-	 * @param   mixed   $ci  column name or array($column, $alias) or object
+	 * @param   mixed   $c1  column name or array($column, $alias) or object
 	 * @param   string  $op  logic operator
 	 * @param   mixed   $c2  column name or array($column, $alias) or object
 	 * @return  $this
