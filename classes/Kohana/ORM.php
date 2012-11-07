@@ -1641,7 +1641,7 @@ class Kohana_ORM extends Model implements serializable {
 		$this->_build(Database::SELECT);
 
 		$records = $this->_db_builder->from(array($this->_table_name, $this->_object_name))
-			->select(array(DB::expr('COUNT(*)'), 'records_found'))
+			->select(array(DB::expr('COUNT("'.$this->_primary_key.'")'), 'records_found')) 
 			->execute($this->_db)
 			->get('records_found');
 
