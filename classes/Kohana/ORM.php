@@ -41,7 +41,7 @@ class Kohana_ORM extends Model implements serializable {
 	public static function factory($model, $id = NULL)
 	{
 		// Set class name
-		$model = 'Model_'.$model;
+		$model = 'Model_'.ucwords($model);
 
 		return new $model($id);
 	}
