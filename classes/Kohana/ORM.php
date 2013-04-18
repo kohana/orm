@@ -1621,9 +1621,9 @@ class Kohana_ORM extends Model implements serializable {
 
 		foreach ($this->_db_pending as $key => $method)
 		{
-			if ($method['name'] == 'select')
+			if ($method['name'] == 'select' OR $method['name'] == 'order_by')
 			{
-				// Ignore any selected columns for now
+				// Ignore any selected columns and sorting for now
 				$selects[] = $method;
 				unset($this->_db_pending[$key]);
 			}
