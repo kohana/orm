@@ -1651,7 +1651,7 @@ class Kohana_ORM extends Model implements serializable {
 		$this->reset();
 
 		// Return the total number of records in a table
-		return (int)$records;
+		return (int) $records;
 	}
 
 	/**
