@@ -138,7 +138,7 @@ class Kohana_Auth_ORM extends Auth {
 		}
 
 		// Run the standard completion
-		$this->complete_login($user);
+		return $this->complete_login($user);
 	}
 
 	/**
