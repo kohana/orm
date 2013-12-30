@@ -769,7 +769,7 @@ class Kohana_ORM extends Model implements serializable {
 	 * This method should be used for loading in post data, etc.
 	 *
 	 * @param  array $values   Array of column => value pairs
-	 * @param  array $columns  Array of columns to be set, allows setting related model data
+	 * @param  array $columns  Array of columns to be set
 	 * @return ORM
 	 */
 	public function values(array $values, array $columns)
