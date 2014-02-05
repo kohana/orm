@@ -1649,7 +1649,7 @@ class Kohana_ORM extends Model implements serializable {
 			->get('records_found');
 
 		// Add back in selected columns
-		$this->_db_pending += $selects;
+		$this->_db_pending = array_merge($this->_db_pending, $selects);
 
 		$this->reset();
 
