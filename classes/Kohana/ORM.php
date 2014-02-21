@@ -1463,6 +1463,16 @@ class Kohana_ORM extends Model implements serializable {
 		}
 		else
 		{
+			if ($far_keys instanceof ORM && ! $far_keys->loaded())
+			{
+				return FALSE;
+			}
+
+			if ( ! Arr::is_array($far_keys))
+			{
+				$far_keys = array($far_keys);
+			}
+
 			return $count === count($far_keys);
 		}
 
