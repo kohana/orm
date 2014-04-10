@@ -2330,7 +2330,7 @@ class Kohana_ORM extends Model implements serializable {
 	 *
 	 * @param   string   $field  the field to check for uniqueness
 	 * @param   mixed    $value  the value to check for uniqueness
-	 * @return  bool     whteher the value is unique
+	 * @return  bool     whether the value is unique
 	 */
 	public function unique($field, $value)
 	{
