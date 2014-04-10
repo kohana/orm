@@ -550,7 +550,7 @@ class Kohana_ORM extends Model implements serializable {
 	 */
 	public function __get($column)
 	{
-		if (array_key_exists($column, $this->_object))
+		if (isset($this->_object[$column]) OR array_key_exists($column, $this->_object))
 		{
 			return (in_array($column, $this->_serialize_columns))
 				? $this->_unserialize_value($this->_object[$column])
@@ -1030,21 +1030,18 @@ class Kohana_ORM extends Model implements serializable {
 	 */
 	protected function _load_values(array $values)
 	{
-		if (array_key_exists($this->_primary_key, $values))
+		if (isset($values[$this->_primary_key]))
 		{
-			if ($values[$this->_primary_key] !== NULL)
-			{
-				// Flag as loaded and valid
-				$this->_loaded = $this->_valid = TRUE;
+            // Flag as loaded and valid
+            $this->_loaded = $this->_valid = TRUE;
 
-				// Store primary key
-				$this->_primary_key_value = $values[$this->_primary_key];
-			}
-			else
-			{
-				// Not loaded or valid
-				$this->_loaded = $this->_valid = FALSE;
-			}
+            // Store primary key
+            $this->_primary_key_value = $values[$this->_primary_key];
+		}
+		else
+		{
+            // Not loaded or valid
+            $this->_loaded = $this->_valid = FALSE;
 		}
 
 		// Related objects
