@@ -242,7 +242,7 @@ class Kohana_ORM extends Model implements serializable {
 	 * Constructs a new model and loads a record if given
 	 *
 	 * @param   mixed $id Parameter for find or object to load
-	 * @return  void
+	 * @return $this
 	 */
 	public function __construct($id = NULL)
 	{
@@ -378,7 +378,7 @@ class Kohana_ORM extends Model implements serializable {
 	 *
 	 * @chainable
 	 * @param   boolean $force Force reloading
-	 * @return  ORM
+	 * @return  $this
 	 */
 	public function reload_columns($force = FALSE)
 	{
@@ -406,7 +406,7 @@ class Kohana_ORM extends Model implements serializable {
 	 * Unloads the current object and clears the status.
 	 *
 	 * @chainable
-	 * @return ORM
+	 * @return $this
 	 */
 	public function clear()
 	{
@@ -434,7 +434,7 @@ class Kohana_ORM extends Model implements serializable {
 	 * Reloads the current object from the database.
 	 *
 	 * @chainable
-	 * @return ORM
+	 * @return $this
 	 */
 	public function reload()
 	{
@@ -652,7 +652,8 @@ class Kohana_ORM extends Model implements serializable {
 	 *
 	 * @param  string $column Column name
 	 * @param  mixed  $value  Column value
-	 * @return void
+	 * @throws Kohana_Exception
+	 * @return $this
 	 */
 	public function set($column, $value)
 	{
@@ -705,7 +706,7 @@ class Kohana_ORM extends Model implements serializable {
 	 *
 	 * @param  array $values   Array of column => val
 	 * @param  array $expected Array of keys to take from $values
-	 * @return ORM
+	 * @return $this
 	 */
 	public function values(array $values, array $expected = NULL)
 	{
@@ -773,7 +774,7 @@ class Kohana_ORM extends Model implements serializable {
 	 * can be nested using 'object1:object2' syntax
 	 *
 	 * @param  string $target_path Target model to bind to
-	 * @return void
+	 * @return $this
 	 */
 	public function with($target_path)
 	{
@@ -856,7 +857,7 @@ class Kohana_ORM extends Model implements serializable {
 	 * Initializes the Database Builder to given query type
 	 *
 	 * @param  integer $type Type of Database query
-	 * @return ORM
+	 * @return $this
 	 */
 	protected function _build($type)
 	{
@@ -892,7 +893,8 @@ class Kohana_ORM extends Model implements serializable {
 	 * Finds and loads a single database row into the object.
 	 *
 	 * @chainable
-	 * @return ORM
+	 * @throws Kohana_Exception
+	 * @return $this
 	 */
 	public function find()
 	{
@@ -916,6 +918,7 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Finds multiple database rows and returns an iterator of the rows found.
 	 *
+	 * @throws Kohana_Exception
 	 * @return Database_Result
 	 */
 	public function find_all()
@@ -961,7 +964,7 @@ class Kohana_ORM extends Model implements serializable {
 	 *
 	 * @chainable
 	 * @param  bool $multiple Return an iterator or load a single row
-	 * @return ORM|Database_Result
+	 * @return $this|Database_Result
 	 */
 	protected function _load_result($multiple = FALSE)
 	{
@@ -1026,7 +1029,7 @@ class Kohana_ORM extends Model implements serializable {
 	 *
 	 * @chainable
 	 * @param  array $values Values to load
-	 * @return ORM
+	 * @return $this
 	 */
 	protected function _load_values(array $values)
 	{
@@ -1190,7 +1193,8 @@ class Kohana_ORM extends Model implements serializable {
 	 * Validates the current model's data
 	 *
 	 * @param  Validation $extra_validation Validation object
-	 * @return ORM
+	 * @throws ORM_Validation_Exception
+	 * @return $this
 	 */
 	public function check(Validation $extra_validation = NULL)
 	{
@@ -1219,8 +1223,10 @@ class Kohana_ORM extends Model implements serializable {
 
 	/**
 	 * Insert a new object to the database
+	 *
 	 * @param  Validation $validation Validation object
-	 * @return ORM
+	 * @throws Kohana_Exception
+	 * @return $this
 	 */
 	public function create(Validation $validation = NULL)
 	{
@@ -1279,7 +1285,8 @@ class Kohana_ORM extends Model implements serializable {
 	 *
 	 * @chainable
 	 * @param  Validation $validation Validation object
-	 * @return ORM
+	 * @throws Kohana_Exception
+	 * @return $this
 	 */
 	public function update(Validation $validation = NULL)
 	{
@@ -1344,7 +1351,7 @@ class Kohana_ORM extends Model implements serializable {
 	 *
 	 * @chainable
 	 * @param  Validation $validation Validation object
-	 * @return ORM
+	 * @return $this
 	 */
 	public function save(Validation $validation = NULL)
 	{
@@ -1355,7 +1362,8 @@ class Kohana_ORM extends Model implements serializable {
 	 * Deletes a single record while ignoring relationships.
 	 *
 	 * @chainable
-	 * @return ORM
+	 * @throws Kohana_Exception
+	 * @return $this
 	 */
 	public function delete()
 	{
@@ -1431,7 +1439,7 @@ class Kohana_ORM extends Model implements serializable {
 	 *
 	 * @param  string  $alias    Alias of the has_many "through" relationship
 	 * @param  mixed   $far_keys Related model, primary key, or an array of primary keys
-	 * @return ORM
+	 * @return $this
 	 */
 	public function add($alias, $far_keys)
 	{
@@ -1466,7 +1474,7 @@ class Kohana_ORM extends Model implements serializable {
 	 *
 	 * @param  string $alias    Alias of the has_many "through" relationship
 	 * @param  mixed  $far_keys Related model, primary key, or an array of primary keys
-	 * @return ORM
+	 * @return $this
 	 */
 	public function remove($alias, $far_keys = NULL)
 	{
@@ -1545,7 +1553,7 @@ class Kohana_ORM extends Model implements serializable {
 	 * Returns an ORM model for the given one-one related alias
 	 *
 	 * @param  string $alias Alias name
-	 * @return ORM
+	 * @return boolean|ORM
 	 */
 	protected function _related($alias)
 	{
@@ -1592,7 +1600,7 @@ class Kohana_ORM extends Model implements serializable {
 	 * query conditions for another query.
 	 *
 	 * @param bool $next Pass FALSE to avoid resetting on the next call
-	 * @return ORM
+	 * @return $this
 	 */
 	public function reset($next = TRUE)
 	{
@@ -1965,7 +1973,7 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Adds "ON ..." conditions for the last created JOIN statement.
 	 *
-	 * @param   mixed   $ci  column name or array($column, $alias) or object
+	 * @param   mixed   $c1  column name or array($column, $alias) or object
 	 * @param   string  $op  logic operator
 	 * @param   mixed   $c2  column name or array($column, $alias) or object
 	 * @return  $this
@@ -2195,7 +2203,7 @@ class Kohana_ORM extends Model implements serializable {
 	 *
 	 * @param   string   $field  the field to check for uniqueness
 	 * @param   mixed    $value  the value to check for uniqueness
-	 * @return  bool     whteher the value is unique
+	 * @return  bool     whether the value is unique
 	 */
 	public function unique($field, $value)
 	{
