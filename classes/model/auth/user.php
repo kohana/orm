@@ -45,7 +45,9 @@ class Model_Auth_User extends ORM {
 			),
 		);
 	}
-
+        public function extra_rules(){
+        	return array();
+        }
 	/**
 	 * Filters to run when data is set in this model. The password filter
 	 * automatically hashes the password when it's set in the model.
@@ -163,7 +165,10 @@ class Model_Auth_User extends ORM {
 		// Validation for passwords
 		$extra_validation = Model_User::get_password_validation($values)
 			->rule('password', 'not_empty');
-
+		//Extend with extra validation
+        	foreach ($this->extra_rules() as $field => $rules) {
+            		$extra_validation->rules($field, $rules);
+        	}
 		return $this->values($values, $expected)->create($extra_validation);
 	}
 
@@ -197,7 +202,10 @@ class Model_Auth_User extends ORM {
 
 		// Validation for passwords
 		$extra_validation = Model_User::get_password_validation($values);
-
+		//Extend with extra validation
+        	foreach ($this->extra_rules() as $field => $rules) {
+            		$extra_validation->rules($field, $rules);
+        	}
 		return $this->values($values, $expected)->update($extra_validation);
 	}
 
