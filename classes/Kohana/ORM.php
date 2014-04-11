@@ -8,77 +8,50 @@
  * [ref-orm]: http://wikipedia.org/wiki/Object-relational_mapping
  * [ref-act]: http://wikipedia.org/wiki/Active_record
  *
- * @package    Kohana/ORM
- * @author     Kohana Team
- * @copyright  (c) 2007-2012 Kohana Team
- * @license    http://kohanaframework.org/license
+ * @package   Kohana/ORM
+ * @author    Kohana Team
+ * @copyright (c) 2007-2014 Kohana Team
+ * @license   http://kohanaframework.org/license
  */
-class Kohana_ORM extends Model implements serializable {
+abstract class Kohana_ORM extends Model implements Serializable {
 
 	/**
-	 * Stores column information for ORM models
-	 * @var array
+	 * @var array Stores column information for ORM models
 	 */
 	protected static $_column_cache = array();
 	
 	/**
-	 * Initialization storage for ORM models
-	 * @var array
+	 * @var array Initialization storage for ORM models
 	 */
 	protected static $_init_cache = array();
 
 	/**
-	 * Creates and returns a new model. 
-	 * Model name must be passed with its' original casing, e.g.
-	 * 
-	 *    $model = ORM::factory('User_Token');
-	 *
-	 * @chainable
-	 * @param   string  $model  Model name
-	 * @param   mixed   $id     Parameter for find()
-	 * @return  ORM
-	 */
-	public static function factory($model, $id = NULL)
-	{
-		// Set class name
-		$model = 'Model_'.$model;
-
-		return new $model($id);
-	}
-
-	/**
-	 * "Has one" relationships
-	 * @var array
+	 * @var array "Has one" relationships
 	 */
 	protected $_has_one = array();
 
 	/**
-	 * "Belongs to" relationships
-	 * @var array
+	 * @var array "Belongs to" relationships
 	 */
 	protected $_belongs_to = array();
 
 	/**
-	 * "Has many" relationships
-	 * @var array
+	 * @var array "Has many" relationships
 	 */
 	protected $_has_many = array();
 
 	/**
-	 * Relationships that should always be joined
-	 * @var array
+	 * @var array Relationships that should always be joined
 	 */
 	protected $_load_with = array();
 
 	/**
-	 * Validation object created before saving/updating
-	 * @var Validation
+	 * @var Validation Validation object created before saving/updating
 	 */
-	protected $_validation = NULL;
+	protected $_validation;
 
 	/**
-	 * Current object
-	 * @var array
+	 * @var array Current object
 	 */
 	protected $_object = array();
 
@@ -113,141 +86,160 @@ class Kohana_ORM extends Model implements serializable {
 	protected $_saved = FALSE;
 
 	/**
-	 * @var array
+	 * @var array An array of column name => sorting direction (ASC/DESC)
 	 */
-	protected $_sorting;
+	protected $_sorting = array();
 
 	/**
-	 * Foreign key suffix
-	 * @var string
+	 * @var string Foreign key suffix
 	 */
 	protected $_foreign_key_suffix = '_id';
 
 	/**
-	 * Model name
-	 * @var string
+	 * @var string Model name
 	 */
 	protected $_object_name;
 
 	/**
-	 * Plural model name
-	 * @var string
+	 * @var string Plural model name
 	 */
 	protected $_object_plural;
 
 	/**
-	 * Table name
-	 * @var string
+	 * @var string Table name
 	 */
 	protected $_table_name;
 
 	/**
-	 * Table columns
-	 * @var array
+	 * @var array Table columns
 	 */
 	protected $_table_columns;
 
 	/**
-	 * Auto-update columns for updates
-	 * @var string
-	 */
-	protected $_updated_column = NULL;
-
-	/**
-	 * Auto-update columns for creation
-	 * @var string
-	 */
-	protected $_created_column = NULL;
-
-	/**
-	 * Auto-serialize and unserialize columns on get/set
+	 * Auto-updated column at create.
+	 * Set as an array('column' => string $column_name, 'format' => string $date_format).
+	 * 
+	 *     array('column' => 'date_create', 'format' => TRUE); // Default date format
+	 *     array('column' => 'date_create', 'format' => DateTime::ATOM); // ATOM date format
+	 * 
+	 * @see http://php.net/class.datetime#datetime.constants.types Date formats
 	 * @var array
+	 */
+	protected $_created_column;
+
+	/**
+	 * @var array Auto-updated column at update.
+	 * @see ORM::$_created_column
+	 */
+	protected $_updated_column;
+
+	/**
+	 * @var array Auto-serialized and unserialized ORM properties
+	 */
+	protected $_serialize_properties = array(
+		'_primary_key_value',
+		'_object',
+		'_changed',
+		'_loaded',
+		'_saved',
+		'_sorting',
+		'_original_values'
+	);
+
+	/**
+	 * @var array Auto-serialize and unserialize columns on get/set
 	 */
 	protected $_serialize_columns = array();
 
 	/**
-	 * Table primary key
-	 * @var string
+	 * @var string Table primary key
 	 */
 	protected $_primary_key = 'id';
 
 	/**
-	 * Primary key value
-	 * @var mixed
+	 * @var mixed Primary key value
 	 */
 	protected $_primary_key_value;
 
 	/**
-	 * Model configuration, table names plural?
-	 * @var bool
+	 * @var bool Model configuration, table names plural?
 	 */
 	protected $_table_names_plural = TRUE;
 
 	/**
-	 * Model configuration, reload on wakeup?
-	 * @var bool
+	 * @var bool Model configuration, reload on wakeup?
 	 */
 	protected $_reload_on_wakeup = TRUE;
 
 	/**
-	 * Database Object
-	 * @var Database
+	 * @var Database Database object
 	 */
-	protected $_db = NULL;
+	protected $_db;
 
 	/**
-	 * Database config group
-	 * @var String
+	 * @var string Database config group
 	 */
-	protected $_db_group = NULL;
+	protected $_db_group;
 
 	/**
-	 * Database methods applied
-	 * @var array
+	 * @var array Database methods applied
 	 */
 	protected $_db_applied = array();
 
 	/**
-	 * Database methods pending
-	 * @var array
+	 * @var array Database methods pending
 	 */
 	protected $_db_pending = array();
 
 	/**
-	 * Reset builder
-	 * @var bool
+	 * @var bool Reset builder
 	 */
 	protected $_db_reset = TRUE;
 
 	/**
-	 * Database query builder
-	 * @var Database_Query_Builder_Select
+	 * @var Database_Query_Builder_Select Database query builder
 	 */
 	protected $_db_builder;
 
 	/**
-	 * With calls already applied
-	 * @var array
+	 * @var array With calls already applied
 	 */
 	protected $_with_applied = array();
 
 	/**
-	 * Data to be loaded into the model from a database call cast
-	 * @var array
+	 * @var array Data to be loaded into the model from a database call cast
 	 */
 	protected $_cast_data = array();
 
 	/**
-	 * The message filename used for validation errors.
-	 * Defaults to ORM::$_object_name
+	 * The message filename used for validation errors. 
+	 * Defaults to [ORM::$_object_name].
 	 * @var string
 	 */
-	protected $_errors_filename = NULL;
+	protected $_errors_filename;
 
 	/**
-	 * Constructs a new model and loads a record if given
+	 * Creates and returns a new model. 
+	 * Model name must be passed with it's original casing.
 	 *
-	 * @param   mixed $id Parameter for find or object to load
+	 *    $model = ORM::factory('User_Token');
+	 *
+	 * @param  string $model Model name
+	 * @param  mixed  $id    Parameter for [ORM::find()]
+	 * @return ORM
+	 */
+	public static function factory($model, $id = NULL)
+	{
+		// Set class name
+		$model = 'Model_'.$model;
+
+		return new $model($id);
+	}
+
+	/**
+	 * Constructs a new model and loads a record if given.
+	 *
+	 * @param mixed $id Parameter for find or object to load
 	 */
 	public function __construct($id = NULL)
 	{
@@ -255,7 +247,7 @@ class Kohana_ORM extends Model implements serializable {
 
 		if ($id !== NULL)
 		{
-			if (is_array($id))
+			if (Arr::is_array($id))
 			{
 				foreach ($id as $column => $value)
 				{
@@ -281,7 +273,7 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Prepares the model database connection, determines the table name,
+	 * Prepares the model database connection, determines the table name
 	 * and loads column information.
 	 *
 	 * @return void
@@ -293,7 +285,7 @@ class Kohana_ORM extends Model implements serializable {
 		{
 			$this->_object_name = strtolower(substr(get_class($this), 6));
 		}
-		
+
 		// Check if this model has already been initialized
 		if ( ! $init = Arr::get(ORM::$_init_cache, $this->_object_name, FALSE))
 		{
@@ -302,14 +294,14 @@ class Kohana_ORM extends Model implements serializable {
 				'_has_one'    => array(),
 				'_has_many'   => array(),
 			);
-			
+
 			// Set the object plural name if none predefined
 			if ( ! isset($this->_object_plural))
 			{
 				$init['_object_plural'] = Inflector::plural($this->_object_name);
 			}
 
-			if ( ! $this->_errors_filename)
+			if (empty($this->_errors_filename))
 			{
 				$init['_errors_filename'] = $this->_object_name;
 			}
@@ -331,7 +323,7 @@ class Kohana_ORM extends Model implements serializable {
 					$init['_table_name'] = Arr::get($init, '_object_plural', $this->_object_plural);
 				}
 			}
-			
+
 			$defaults = array();
 
 			foreach ($this->_belongs_to as $alias => $details)
@@ -340,7 +332,7 @@ class Kohana_ORM extends Model implements serializable {
 				{
 					$defaults['model'] = str_replace(' ', '_', ucwords(str_replace('_', ' ', $alias)));
 				}
-				
+
 				$defaults['foreign_key'] = $alias.$this->_foreign_key_suffix;
 
 				$init['_belongs_to'][$alias] = array_merge($defaults, $details);
@@ -352,7 +344,7 @@ class Kohana_ORM extends Model implements serializable {
 				{
 					$defaults['model'] = str_replace(' ', '_', ucwords(str_replace('_', ' ', $alias)));
 				}
-				
+
 				$defaults['foreign_key'] = $this->_object_name.$this->_foreign_key_suffix;
 
 				$init['_has_one'][$alias] = array_merge($defaults, $details);
@@ -362,38 +354,39 @@ class Kohana_ORM extends Model implements serializable {
 			{
 				if ( ! isset($details['model']))
 				{
-					$defaults['model'] = str_replace(' ', '_', ucwords(str_replace('_', ' ', Inflector::singular($alias))));
+					$defaults['model'] = str_replace(
+						' ',
+						'_',
+						ucwords(str_replace('_', ' ', Inflector::singular($alias)))
+					);
 				}
-				
+
 				$defaults['foreign_key'] = $this->_object_name.$this->_foreign_key_suffix;
 				$defaults['through'] = NULL;
-				
+
 				if ( ! isset($details['far_key']))
 				{
 					$defaults['far_key'] = Inflector::singular($alias).$this->_foreign_key_suffix;
 				}
-				
+
 				$init['_has_many'][$alias] = array_merge($defaults, $details);
 			}
-			
+
 			ORM::$_init_cache[$this->_object_name] = $init;
 		}
-		
+
 		// Assign initialized properties to the current object
 		foreach ($init as $property => $value)
 		{
-			$this->{$property} = $value;
+			$this->$property = $value;
 		}
-		
-		// Load column information
-		$this->reload_columns();
 
-		// Clear initial model state
-		$this->clear();
+		$this->reload_columns()
+			->clear();
 	}
 
 	/**
-	 * Initializes validation rules, and labels
+	 * Initializes validation rules and labels.
 	 *
 	 * @return void
 	 */
@@ -425,9 +418,8 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Reload column definitions.
 	 *
-	 * @chainable
-	 * @param   boolean $force Force reloading
-	 * @return  ORM
+	 * @param  boolean $force Force reloading
+	 * @return ORM
 	 */
 	public function reload_columns($force = FALSE)
 	{
@@ -454,13 +446,15 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Unloads the current object and clears the status.
 	 *
-	 * @chainable
 	 * @return ORM
 	 */
 	public function clear()
 	{
 		// Create an array with all the columns set to NULL
-		$values = array_combine(array_keys($this->_table_columns), array_fill(0, count($this->_table_columns), NULL));
+		$values = array_combine(
+			array_keys($this->_table_columns), 
+			array_fill(0, count($this->_table_columns), NULL)
+		);
 
 		// Replace the object and reset the object status
 		$this->_object = $this->_changed = $this->_related = $this->_original_values = array();
@@ -474,15 +468,12 @@ class Kohana_ORM extends Model implements serializable {
 		// Reset the loaded state
 		$this->_loaded = FALSE;
 
-		$this->reset();
-
-		return $this;
+		return $this->reset();
 	}
 
 	/**
 	 * Reloads the current object from the database.
 	 *
-	 * @chainable
 	 * @return ORM
 	 */
 	public function reload()
@@ -494,26 +485,32 @@ class Kohana_ORM extends Model implements serializable {
 
 		// Only reload the object if we have one to reload
 		if ($this->_loaded)
+		{
 			return $this->clear()
 				->where($this->_object_name.'.'.$this->_primary_key, '=', $primary_key)
 				->find();
+		}
 		else
+		{
 			return $this->clear();
+		}
 	}
 
 	/**
 	 * Checks if object data is set.
 	 *
 	 * @param  string $column Column name
-	 * @return boolean
+	 * @return bool
 	 */
 	public function __isset($column)
 	{
-		return (isset($this->_object[$column]) OR
+		return (
+			isset($this->_object[$column]) OR
 			isset($this->_related[$column]) OR
 			isset($this->_has_one[$column]) OR
 			isset($this->_belongs_to[$column]) OR
-			isset($this->_has_many[$column]));
+			isset($this->_has_many[$column])
+		);
 	}
 
 	/**
@@ -546,33 +543,19 @@ class Kohana_ORM extends Model implements serializable {
 	public function serialize()
 	{
 		// Store only information about the object
-		foreach (array('_primary_key_value', '_object', '_changed', '_loaded', '_saved', '_sorting', '_original_values') as $var)
+		foreach ($this->_serialize_properties as $property)
 		{
-			$data[$var] = $this->{$var};
+			$data[$property] = $this->$property;
 		}
 
 		return serialize($data);
 	}
 
 	/**
-	 * Check whether the model data has been modified.
-	 * If $field is specified, checks whether that field was modified.
-	 *
-	 * @param string  $field  field to check for changes
-	 * @return  bool  Whether or not the field has changed
-	 */
-	public function changed($field = NULL)
-	{
-		return ($field === NULL)
-			? $this->_changed
-			: Arr::get($this->_changed, $field);
-	}
-
-	/**
 	 * Prepares the database connection and reloads the object.
 	 *
-	 * @param string $data String for unserialization
-	 * @return  void
+	 * @param  string $data String for unserialization
+	 * @return void
 	 */
 	public function unserialize($data)
 	{
@@ -592,30 +575,41 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Handles retrieval of all model values, relationships, and metadata.
-	 * [!!] This should not be overridden.
+	 * Check whether the model data has been modified.
+	 * If $field is specified, checks whether that field was modified.
 	 *
-	 * @param   string $column Column name
-	 * @return  mixed
+	 * @param  string $field Field to check for changes
+	 * @return bool Whether or not the field has changed
 	 */
-	public function __get($column)
+	public function changed($field = NULL)
+	{
+		return is_null($field) ? $this->_changed : Arr::get($this->_changed, $field);
+	}
+
+	/**
+	 * Handles retrieval of all model values, relationships and metadata.
+	 *
+	 * @param  string $column Column name
+	 * @return mixed
+	 */
+	final public function __get($column)
 	{
 		return $this->get($column);
 	}
 	
 	/**
-	 * Handles getting of column
-	 * Override this method to add custom get behavior
+	 * Handles getting of column.
+	 * [!!] Override this method to add custom get behavior.
 	 *
-	 * @param   string $column Column name
-	 * @throws Kohana_Exception
+	 * @param  string $column Column name
 	 * @return mixed
+	 * @throws Kohana_Exception
 	 */
 	public function get($column)
 	{
 		if (array_key_exists($column, $this->_object))
 		{
-			return (in_array($column, $this->_serialize_columns))
+			return in_array($column, $this->_serialize_columns)
 				? $this->_unserialize_value($this->_object[$column])
 				: $this->_object[$column];
 		}
@@ -632,9 +626,10 @@ class Kohana_ORM extends Model implements serializable {
 			$col = $model->_object_name.'.'.$model->_primary_key;
 			$val = $this->_object[$this->_belongs_to[$column]['foreign_key']];
 
-			// Make sure we don't run WHERE "AUTO_INCREMENT column" = NULL queries. This would
-			// return the last inserted record instead of an empty result.
-			// See: http://mysql.localhost.net.ar/doc/refman/5.1/en/server-session-variables.html#sysvar_sql_auto_is_null
+			// @todo Need move into Database_MySQL driver or add check database type
+			// Make sure we don't run WHERE "AUTO_INCREMENT column" = NULL queries. 
+			// This would return the last inserted record instead of an empty result.
+			// @see http://mysql.localhost.net.ar/doc/refman/5.4/en/server-session-variables.html#sysvar_sql_auto_is_null
 			if ($val !== NULL)
 			{
 				$model->where($col, '=', $val)->find();
@@ -684,32 +679,34 @@ class Kohana_ORM extends Model implements serializable {
 		}
 		else
 		{
-			throw new Kohana_Exception('The :property property does not exist in the :class class',
-				array(':property' => $column, ':class' => get_class($this)));
+			throw new Kohana_Exception(
+				'The :property property does not exist in the :class class',
+				array(':property' => $column, ':class' => get_class($this))
+			);
 		}
 	}
 
 	/**
 	 * Base set method.
-	 * [!!] This should not be overridden.
 	 *
-	 * @param  string $column  Column name
-	 * @param  mixed  $value   Column value
+	 * @param  string $column Column name
+	 * @param  mixed  $value  Column value
 	 * @return void
+	 * @throws Kohana_Exception
 	 */
-	public function __set($column, $value)
+	final public function __set($column, $value)
 	{
 		$this->set($column, $value);
 	}
 
 	/**
-	 * Handles setting of columns
-	 * Override this method to add custom set behavior
+	 * Handles setting of columns.
+	 * [!!] Override this method to add custom set behavior.
 	 *
 	 * @param  string $column Column name
 	 * @param  mixed  $value  Column value
-	 * @throws Kohana_Exception
 	 * @return ORM
+	 * @throws Kohana_Exception
 	 */
 	public function set($column, $value)
 	{
@@ -749,16 +746,16 @@ class Kohana_ORM extends Model implements serializable {
 			$this->_related[$column] = $value;
 
 			// Update the foreign key of this model
-			$this->_object[$this->_belongs_to[$column]['foreign_key']] = ($value instanceof ORM)
-				? $value->pk()
-				: NULL;
+			$this->_object[$this->_belongs_to[$column]['foreign_key']] = $value instanceof ORM ? $value->pk() : NULL;
 
 			$this->_changed[$column] = $this->_belongs_to[$column]['foreign_key'];
 		}
 		else
 		{
-			throw new Kohana_Exception('The :property: property does not exist in the :class: class',
-				array(':property:' => $column, ':class:' => get_class($this)));
+			throw new Kohana_Exception(
+				'The :property: property does not exist in the :class: class',
+				array(':property:' => $column, ':class:' => get_class($this))
+			);
 		}
 
 		return $this;
@@ -768,8 +765,8 @@ class Kohana_ORM extends Model implements serializable {
 	 * Set values from an array with support for one-one relationships.  
 	 * This method should be used for loading in post data, etc.
 	 *
-	 * @param  array $values   Array of column => value pairs
-	 * @param  array $columns  Array of columns to be set
+	 * @param  array $values  Array of column => value pairs
+	 * @param  array $columns Array of columns to be set
 	 * @return ORM
 	 */
 	public function values(array $values, array $columns)
@@ -778,21 +775,18 @@ class Kohana_ORM extends Model implements serializable {
 		{
 			if (is_string($key))
 			{
-				// isset() fails when the value is NULL (we want it to pass)
-				if ( ! array_key_exists($key, $values))
-					continue;
-
-				// Try to set values to a related model
-				$this->{$key}->values($values[$key], $column);
+				if (array_key_exists($key, $values))
+				{
+					// Try to set values to a related model
+					$this->$key->values($values[$key], $column);
+				}
 			}
 			else
 			{
-				// isset() fails when the value is NULL (we want it to pass)
-				if ( ! array_key_exists($column, $values))
-					continue;
-
-				// Update the column, respects __set()
-				$this->$column = $values[$column];
+				if (array_key_exists($column, $values))
+				{
+					$this->set($column, $values[$column]);
+				}
 			}
 		}
 
@@ -801,7 +795,7 @@ class Kohana_ORM extends Model implements serializable {
 
 	/**
 	 * Returns the values of this object as an array, including any related one-one
-	 * models that have already been loaded using with()
+	 * models that have already been loaded using [ORM::with()].
 	 *
 	 * @return array
 	 */
@@ -811,8 +805,7 @@ class Kohana_ORM extends Model implements serializable {
 
 		foreach ($this->_object as $column => $value)
 		{
-			// Call __get for any user processing
-			$object[$column] = $this->__get($column);
+			$object[$column] = $this->get($column);
 		}
 
 		foreach ($this->_related as $column => $model)
@@ -825,8 +818,8 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Binds another one-to-one object to this model.  One-to-one objects
-	 * can be nested using 'object1:object2' syntax
+	 * Binds another one-to-one object to this model.
+	 * One-to-one objects can be nested using 'object1:object2' syntax.
 	 *
 	 * @param  string $target_path Target model to bind to
 	 * @return ORM
@@ -858,7 +851,8 @@ class Kohana_ORM extends Model implements serializable {
 		// Target alias is at the end
 		$target_alias = $alias;
 
-		// Pop-off top alias to get the parent path (user:photo:tag becomes user:photo - the parent table prefix)
+		// Pop-off top alias to get the parent path 
+		// (user:photo:tag becomes user:photo - the parent table prefix)
 		array_pop($aliases);
 		$parent_path = implode(':', $aliases);
 
@@ -871,7 +865,8 @@ class Kohana_ORM extends Model implements serializable {
 		{
 			if ( ! isset($this->_with_applied[$parent_path]))
 			{
-				// If the parent path hasn't been joined yet, do it first (otherwise LEFT JOINs fail)
+				// If the parent path hasn't been joined yet, 
+				// do it first (otherwise LEFT JOINs fail)
 				$this->with($parent_path);
 			}
 		}
@@ -903,15 +898,16 @@ class Kohana_ORM extends Model implements serializable {
 		}
 
 		// Join the related object into the result
-		$this->join(array($target->_table_name, $target_path), 'LEFT')->on($join_col1, '=', $join_col2);
+		$this->join(array($target->_table_name, $target_path), 'LEFT')
+			->on($join_col1, '=', $join_col2);
 
 		return $this;
 	}
 
 	/**
-	 * Initializes the Database Builder to given query type
+	 * Initializes the database builder to given query type.
 	 *
-	 * @param  integer $type Type of Database query
+	 * @param  int $type Type of database query
 	 * @return ORM
 	 */
 	protected function _build($type)
@@ -921,10 +917,10 @@ class Kohana_ORM extends Model implements serializable {
 		{
 			case Database::SELECT:
 				$this->_db_builder = DB::select();
-			break;
+				break;
 			case Database::UPDATE:
 				$this->_db_builder = DB::update(array($this->_table_name, $this->_object_name));
-			break;
+				break;
 			case Database::DELETE:
 				// Cannot use an alias for DELETE queries
 				$this->_db_builder = DB::delete($this->_table_name);
@@ -945,16 +941,22 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Finds and loads a single database row into the object.
-	 *
-	 * @chainable
+	 * Finds and loads a single database row into the object
+	 * or multiple rows and returns an iterator of the rows found.
+	 * 
+	 * @param  bool $multiple Return an iterator or load a single row?
+	 * @return ORM|Database_Result
 	 * @throws Kohana_Exception
-	 * @return ORM
 	 */
-	public function find()
+	protected function _find($multiple = FALSE)
 	{
 		if ($this->_loaded)
-			throw new Kohana_Exception('Method find() cannot be called on loaded objects');
+		{
+			throw new Kohana_Exception(
+				'Method ":method" cannot be called on loaded objects',
+				array(':method' => __METHOD__)
+			);
+		}
 
 		if ( ! empty($this->_load_with))
 		{
@@ -965,39 +967,35 @@ class Kohana_ORM extends Model implements serializable {
 			}
 		}
 
-		$this->_build(Database::SELECT);
+		return $this->_build(Database::SELECT)
+			->_load_result($multiple);
+	}
 
-		return $this->_load_result(FALSE);
+	/**
+	 * Finds and loads a single database row into the object.
+	 * 
+	 * @return ORM
+	 * @throws Kohana_Exception
+	 */
+	public function find()
+	{
+		return $this->_find(TRUE);
 	}
 
 	/**
 	 * Finds multiple database rows and returns an iterator of the rows found.
 	 *
-	 * @throws Kohana_Exception
 	 * @return Database_Result
+	 * @throws Kohana_Exception
 	 */
 	public function find_all()
 	{
-		if ($this->_loaded)
-			throw new Kohana_Exception('Method find_all() cannot be called on loaded objects');
-
-		if ( ! empty($this->_load_with))
-		{
-			foreach ($this->_load_with as $alias)
-			{
-				// Bind auto relationships
-				$this->with($alias);
-			}
-		}
-
-		$this->_build(Database::SELECT);
-
-		return $this->_load_result(TRUE);
+		return $this->_find(TRUE);
 	}
 
 	/**
-	 * Returns an array of columns to include in the select query. This method
-	 * can be overridden to change the default select behavior.
+	 * Returns an array of columns to include in the select query. 
+	 * [!!] This method can be overridden to change the default select behavior.
 	 *
 	 * @return array Columns to select
 	 */
@@ -1005,7 +1003,7 @@ class Kohana_ORM extends Model implements serializable {
 	{
 		$columns = array();
 
-		foreach ($this->_table_columns as $column => $_)
+		foreach ($this->_table_columns as $column => $value)
 		{
 			$columns[] = array($this->_object_name.'.'.$column, $column);
 		}
@@ -1014,10 +1012,9 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Loads a database result, either as a new record for this model, or as
-	 * an iterator for multiple rows.
-	 *
-	 * @chainable
+	 * Loads a database result, either as a new record for this model or
+	 * as an iterator for multiple rows.
+	 * 
 	 * @param  bool $multiple Return an iterator or load a single row
 	 * @return ORM|Database_Result
 	 */
@@ -1081,8 +1078,7 @@ class Kohana_ORM extends Model implements serializable {
 
 	/**
 	 * Loads an array of values into into the current object.
-	 *
-	 * @chainable
+	 * 
 	 * @param  array $values Values to load
 	 * @return ORM
 	 */
@@ -1143,7 +1139,7 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Rule definitions for validation
+	 * [Rule definitions](../orm/validation#defining-rules) for validation.
 	 *
 	 * @return array
 	 */
@@ -1153,11 +1149,12 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Filters a value for a specific column
+	 * Filters a value for a specific column.
 	 *
-	 * @param  string $field  The column name
-	 * @param  string $value  The value to filter
+	 * @param  string $field The column name
+	 * @param  string $value The value to filter
 	 * @return string
+	 * @todo   Change $field to understandable $column
 	 */
 	protected function run_filter($field, $value)
 	{
@@ -1170,8 +1167,7 @@ class Kohana_ORM extends Model implements serializable {
 		$filters = empty($filters[$field]) ? $wildcards : array_merge($wildcards, $filters[$field]);
 
 		// Bind the field name and model so they can be used in the filter method
-		$_bound = array
-		(
+		$_bound = array(
 			':field' => $field,
 			':model' => $this,
 		);
@@ -1225,7 +1221,7 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Filter definitions for validation
+	 * [Filter](../orm/filters) definitions for validation.
 	 *
 	 * @return array
 	 */
@@ -1235,7 +1231,7 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Label definitions for validation
+	 * Label definitions for [validation](../orm/validation).
 	 *
 	 * @return array
 	 */
@@ -1245,11 +1241,11 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Validates the current model's data
+	 * Validates the current model's data.
 	 *
 	 * @param  Validation $extra_validation Validation object
-	 * @throws ORM_Validation_Exception
 	 * @return ORM
+	 * @throws ORM_Validation_Exception
 	 */
 	public function check(Validation $extra_validation = NULL)
 	{
@@ -1270,6 +1266,7 @@ class Kohana_ORM extends Model implements serializable {
 				// Merge any possible errors from the external object
 				$exception->add_object('_external', $extra_validation);
 			}
+
 			throw $exception;
 		}
 
@@ -1277,15 +1274,21 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Insert a new object to the database
+	 * Insert a new object to the database.
+	 * 
 	 * @param  Validation $validation Validation object
-	 * @throws Kohana_Exception
 	 * @return ORM
+	 * @throws Kohana_Exception
 	 */
 	public function create(Validation $validation = NULL)
 	{
 		if ($this->_loaded)
-			throw new Kohana_Exception('Cannot create :model model because it is already loaded.', array(':model' => $this->_object_name));
+		{
+			throw new Kohana_Exception(
+				'Cannot create :model model because it is already loaded', 
+				array(':model' => $this->_object_name)
+			);
+		}
 
 		// Require model validation before saving
 		if ( ! $this->_valid OR $validation)
@@ -1306,7 +1309,7 @@ class Kohana_ORM extends Model implements serializable {
 			$column = $this->_created_column['column'];
 			$format = $this->_created_column['format'];
 
-			$data[$column] = $this->_object[$column] = ($format === TRUE) ? time() : date($format);
+			$data[$column] = $this->_object[$column] = $format === TRUE ? time() : date($format);
 		}
 
 		$result = DB::insert($this->_table_name)
@@ -1335,19 +1338,23 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Updates a single record or multiple records
+	 * Updates a single record or multiple records.
 	 *
-	 * @chainable
 	 * @param  Validation $validation Validation object
-	 * @throws Kohana_Exception
 	 * @return ORM
+	 * @throws Kohana_Exception
 	 */
 	public function update(Validation $validation = NULL)
 	{
 		if ( ! $this->_loaded)
-			throw new Kohana_Exception('Cannot update :model model because it is not loaded.', array(':model' => $this->_object_name));
+		{
+			throw new Kohana_Exception(
+				'Cannot update :model model because it is not loaded.', 
+				array(':model' => $this->_object_name)
+			);
+		}
 
-		// Run validation if the model isn't valid or we have additional validation rules.
+		// Run validation if the model isn't valid or we have additional validation rules
 		if ( ! $this->_valid OR $validation)
 		{
 			$this->check($validation);
@@ -1372,16 +1379,13 @@ class Kohana_ORM extends Model implements serializable {
 			$column = $this->_updated_column['column'];
 			$format = $this->_updated_column['format'];
 
-			$data[$column] = $this->_object[$column] = ($format === TRUE) ? time() : date($format);
+			$data[$column] = $this->_object[$column] = $format === TRUE ? time() : date($format);
 		}
-
-		// Use primary key value
-		$id = $this->pk();
 
 		// Update a single record
 		DB::update($this->_table_name)
 			->set($data)
-			->where($this->_primary_key, '=', $id)
+			->where($this->_primary_key, '=', $this->pk())
 			->execute($this->_db);
 
 		if (isset($data[$this->_primary_key]))
@@ -1401,9 +1405,8 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Updates or Creates the record depending on loaded()
+	 * Updates or Creates the record depending on [ORM::loaded()]
 	 *
-	 * @chainable
 	 * @param  Validation $validation Validation object
 	 * @return ORM
 	 */
@@ -1415,21 +1418,20 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Deletes a single record while ignoring relationships.
 	 *
-	 * @chainable
-	 * @throws Kohana_Exception
 	 * @return ORM
+	 * @throws Kohana_Exception
 	 */
 	public function delete()
 	{
 		if ( ! $this->_loaded)
-			throw new Kohana_Exception('Cannot delete :model model because it is not loaded.', array(':model' => $this->_object_name));
-
-		// Use primary key value
-		$id = $this->pk();
+			throw new Kohana_Exception(
+				'Cannot delete :model model because it is not loaded.',
+				array(':model' => $this->_object_name)
+			);
 
 		// Delete the object
 		DB::delete($this->_table_name)
-			->where($this->_primary_key, '=', $id)
+			->where($this->_primary_key, '=', $this->pk())
 			->execute($this->_db);
 
 		return $this->clear();
@@ -1439,7 +1441,6 @@ class Kohana_ORM extends Model implements serializable {
 	 * Tests if this object has a relationship to a different model,
 	 * or an array of different models. When providing far keys, the number
 	 * of relations must equal the number of keys.
-	 * 
 	 *
 	 *     // Check if $model has the login role
 	 *     $model->has('roles', ORM::factory('role', array('name' => 'login')));
@@ -1450,13 +1451,14 @@ class Kohana_ORM extends Model implements serializable {
 	 *     // Check if $model has any roles
 	 *     $model->has('roles')
 	 *
-	 * @param  string  $alias    Alias of the has_many "through" relationship
-	 * @param  mixed   $far_keys Related model, primary key, or an array of primary keys
-	 * @return boolean
+	 * @param  string $alias    Alias of the has_many "through" relationship
+	 * @param  mixed  $far_keys Related model, primary key, or an array of primary keys
+	 * @return bool
 	 */
 	public function has($alias, $far_keys = NULL)
 	{
 		$count = $this->count_relations($alias, $far_keys);
+
 		if ($far_keys === NULL)
 		{
 			return (bool) $count;
@@ -1492,7 +1494,7 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Returns the number of relationships 
+	 * Returns the number of relationships.
 	 *
 	 *     // Counts the number of times the login role is attached to $model
 	 *     $model->count_relations('roles', ORM::factory('role', array('name' => 'login')));
@@ -1504,8 +1506,8 @@ class Kohana_ORM extends Model implements serializable {
 	 *     // Counts the number roles attached to $model
 	 *     $model->count_relations('roles')
 	 *
-	 * @param  string  $alias    Alias of the has_many "through" relationship
-	 * @param  mixed   $far_keys Related model, primary key, or an array of primary keys
+	 * @param  string $alias    Alias of the has_many "through" relationship
+	 * @param  mixed  $far_keys Related model, primary key or an array of primary keys
 	 * @return integer
 	 */
 	public function count_relations($alias, $far_keys = NULL)
@@ -1515,24 +1517,28 @@ class Kohana_ORM extends Model implements serializable {
 			return (int) DB::select(array(DB::expr('COUNT(*)'), 'records_found'))
 				->from($this->_has_many[$alias]['through'])
 				->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk())
-				->execute($this->_db)->get('records_found');
+				->execute($this->_db)
+				->get('records_found');
 		}
 
-		$far_keys = ($far_keys instanceof ORM) ? $far_keys->pk() : $far_keys;
+		$far_keys = $far_keys instanceof ORM ? $far_keys->pk() : $far_keys;
 
 		// We need an array to simplify the logic
 		$far_keys = (array) $far_keys;
 
 		// Nothing to check if the model isn't loaded or we don't have any far_keys
 		if ( ! $far_keys OR ! $this->_loaded)
+		{
 			return 0;
+		}
 
 		$count = (int) DB::select(array(DB::expr('COUNT(*)'), 'records_found'))
 			->from($this->_has_many[$alias]['through'])
 			->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk())
 			->where($this->_has_many[$alias]['far_key'], 'IN', $far_keys)
 			->group_by($this->_has_many[$alias]['far_key'])
-			->execute($this->_db)->get('records_found');
+			->execute($this->_db)
+			->get('records_found');
 
 		// Rows found need to match the rows searched
 		return (int) $count;
@@ -1548,8 +1554,8 @@ class Kohana_ORM extends Model implements serializable {
 	 *     // Add multiple roles (for example, from checkboxes on a form)
 	 *     $model->add('roles', array(1, 2, 3, 4));
 	 *
-	 * @param  string  $alias    Alias of the has_many "through" relationship
-	 * @param  mixed   $far_keys Related model, primary key, or an array of primary keys
+	 * @param  string $alias    Alias of the has_many "through" relationship
+	 * @param  mixed  $far_keys Related model, primary key or an array of primary keys
 	 * @return ORM
 	 */
 	public function add($alias, $far_keys)
@@ -1635,8 +1641,12 @@ class Kohana_ORM extends Model implements serializable {
 
 		$this->_build(Database::SELECT);
 
-		$records = $this->_db_builder->from(array($this->_table_name, $this->_object_name))
-			->select(array(DB::expr('COUNT('.$this->_db->quote_column($this->_object_name.'.'.$this->_primary_key).')'), 'records_found'))
+		$records = $this->_db_builder
+			->select(array(
+				DB::expr('COUNT('.$this->_db->quote_column($this->_object_name.'.'.$this->_primary_key).')'),
+				'records_found'
+			))
+			->from(array($this->_table_name, $this->_object_name))
 			->execute($this->_db)
 			->get('records_found');
 
@@ -1650,21 +1660,20 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Proxy method to Database list_columns.
+	 * Proxy method to database list columns.
 	 *
 	 * @return array
 	 */
 	public function list_columns()
 	{
-		// Proxy to database
 		return $this->_db->list_columns($this->_table_name);
 	}
 
 	/**
-	 * Returns an ORM model for the given one-one related alias
+	 * Returns an ORM model for the given one-one related alias.
 	 *
 	 * @param  string $alias Alias name
-	 * @return ORM
+	 * @return mixed
 	 */
 	protected function _related($alias)
 	{
@@ -1680,16 +1689,14 @@ class Kohana_ORM extends Model implements serializable {
 		{
 			return $this->_related[$alias] = ORM::factory($this->_belongs_to[$alias]['model']);
 		}
-		else
-		{
-			return FALSE;
-		}
+
+		return FALSE;
 	}
 
 	/**
-	 * Returns the value of the primary key
+	 * Returns the value of the primary key.
 	 *
-	 * @return mixed Primary key
+	 * @return mixed
 	 */
 	public function pk()
 	{
@@ -1697,7 +1704,7 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Returns last executed query
+	 * Returns last executed query.
 	 *
 	 * @return string
 	 */
@@ -1707,7 +1714,7 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Clears query builder.  Passing FALSE is useful to keep the existing
+	 * Clears query builder. Passing FALSE is useful to keep the existing
 	 * query conditions for another query.
 	 *
 	 * @param bool $next Pass FALSE to avoid resetting on the next call
@@ -1729,86 +1736,173 @@ class Kohana_ORM extends Model implements serializable {
 		return $this;
 	}
 
+	/**
+	 * Serialize value.
+	 *
+	 * @param  mixed $value
+	 * @return string
+	 */
 	protected function _serialize_value($value)
 	{
 		return json_encode($value);
 	}
 
+	/**
+	 * Unserialize value.
+	 *
+	 * @param  string $value
+	 * @return mixed
+	 */
 	protected function _unserialize_value($value)
 	{
 		return json_decode($value, TRUE);
 	}
 
+	/**
+	 * Get object name.
+	 *
+	 * @return string
+	 */
 	public function object_name()
 	{
 		return $this->_object_name;
 	}
 
+	/**
+	 * Get object plural.
+	 *
+	 * @return string
+	 */
 	public function object_plural()
 	{
 		return $this->_object_plural;
 	}
 
+	/**
+	 * Object loaded?
+	 *
+	 * @return bool
+	 */
 	public function loaded()
 	{
 		return $this->_loaded;
 	}
 
+	/**
+	 * Object saved?
+	 *
+	 * @return bool
+	 */
 	public function saved()
 	{
 		return $this->_saved;
 	}
 
+	/**
+	 * Get table column with primary key .
+	 *
+	 * @return string
+	 */
 	public function primary_key()
 	{
 		return $this->_primary_key;
 	}
 
+	/**
+	 * Get table name.
+	 *
+	 * @return string
+	 */
 	public function table_name()
 	{
 		return $this->_table_name;
 	}
 
+	/**
+	 * Get table columns.
+	 *
+	 * @return array
+	 */
 	public function table_columns()
 	{
 		return $this->_table_columns;
 	}
 
+	/**
+	 * Get "has one" relationships.
+	 *
+	 * @return array
+	 */
 	public function has_one()
 	{
 		return $this->_has_one;
 	}
 
+	/**
+	 * Get "belongs to" relationships.
+	 *
+	 * @return array
+	 */
 	public function belongs_to()
 	{
 		return $this->_belongs_to;
 	}
 
+	/**
+	 * Get "has many" relationships.
+	 *
+	 * @return array
+	 */
 	public function has_many()
 	{
 		return $this->_has_many;
 	}
 
+	/**
+	 * Get relationships that should always be joined.
+	 *
+	 * @return array
+	 */
 	public function load_with()
 	{
 		return $this->_load_with;
 	}
 
+	/**
+	 * Get original values of columns.
+	 *
+	 * @return array
+	 */
 	public function original_values()
 	{
 		return $this->_original_values;
 	}
 
+	/**
+	 * Get created column.
+	 *
+	 * @return array
+	 */
 	public function created_column()
 	{
 		return $this->_created_column;
 	}
 
+	/**
+	 * Get updated column.
+	 *
+	 * @return array
+	 */
 	public function updated_column()
 	{
 		return $this->_updated_column;
 	}
 
+	/**
+	 * Validate columns values.
+	 *
+	 * @return Validation
+	 */
 	public function validation()
 	{
 		if ( ! isset($this->_validation))
@@ -1820,77 +1914,89 @@ class Kohana_ORM extends Model implements serializable {
 		return $this->_validation;
 	}
 
+	/**
+	 * Get current object.
+	 *
+	 * @return array
+	 */
 	public function object()
 	{
 		return $this->_object;
 	}
 
+	/**
+	 * Get errors filename.
+	 *
+	 * @return string
+	 */
 	public function errors_filename()
 	{
 		return $this->_errors_filename;
 	}
 
 	/**
-	 * Alias of and_where()
+	 * 
 	 *
-	 * @param   mixed   $column  column name or array($column, $alias) or object
-	 * @param   string  $op      logic operator
-	 * @param   mixed   $value   column value
-	 * @return  $this
+	 * @param  string $name     
+	 * @param  mixed  $column   Column name or array(column, alias) or object
+	 * @param  string $operator Logic operator
+	 * @param  mixed  $value    Column value
+	 * @return ORM
 	 */
-	public function where($column, $op, $value)
+	protected function _where($name, $column, $operator, $value)
 	{
 		// Add pending database call which is executed after query type is determined
 		$this->_db_pending[] = array(
-			'name' => 'where',
-			'args' => array($column, $op, $value),
+			'name' => $name,
+			'args' => array($column, $operator, $value),
 		);
 
 		return $this;
+	}
+
+	/**
+	 * Creates a new "WHERE" condition for the query.
+	 *
+	 * @param  mixed  $column   Column name or array(column, alias) or object
+	 * @param  string $operator Logic operator
+	 * @param  mixed  $value    Column value
+	 * @return ORM
+	 */
+	public function where($column, $operator, $value)
+	{
+		return $this->_where('where', $column, $operator, $value);
 	}
 
 	/**
 	 * Creates a new "AND WHERE" condition for the query.
 	 *
-	 * @param   mixed   $column  column name or array($column, $alias) or object
-	 * @param   string  $op      logic operator
-	 * @param   mixed   $value   column value
-	 * @return  $this
+	 * @param  mixed  $column   Column name or array(column, alias) or object
+	 * @param  string $operator Logic operator
+	 * @param  mixed  $value    Column value
+	 * @return ORM
 	 */
-	public function and_where($column, $op, $value)
+	public function and_where($column, $operator, $value)
 	{
-		// Add pending database call which is executed after query type is determined
-		$this->_db_pending[] = array(
-			'name' => 'and_where',
-			'args' => array($column, $op, $value),
-		);
-
-		return $this;
+		return $this->_where('and_where', $column, $operator, $value);
 	}
 
 	/**
 	 * Creates a new "OR WHERE" condition for the query.
 	 *
-	 * @param   mixed   $column  column name or array($column, $alias) or object
-	 * @param   string  $op      logic operator
-	 * @param   mixed   $value   column value
-	 * @return  $this
+	 * @param  mixed  $column   Column name or array(column, alias) or object
+	 * @param  string $operator Logic operator
+	 * @param  mixed  $value    Column value
+	 * @return ORM
 	 */
-	public function or_where($column, $op, $value)
+	public function or_where($column, $operator, $value)
 	{
-		// Add pending database call which is executed after query type is determined
-		$this->_db_pending[] = array(
-			'name' => 'or_where',
-			'args' => array($column, $op, $value),
-		);
-
-		return $this;
+		return $this->_where('or_where', $column, $operator, $value);
 	}
 
 	/**
-	 * Alias of and_where_open()
+	 * Alias of [ORM::and_where_open()].
 	 *
-	 * @return  $this
+	 * @return ORM
 	 */
 	public function where_open()
 	{
@@ -1900,7 +2006,7 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Opens a new "AND WHERE (...)" grouping.
 	 *
-	 * @return  $this
+	 * @return ORM
 	 */
 	public function and_where_open()
 	{
@@ -1916,7 +2022,7 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Opens a new "OR WHERE (...)" grouping.
 	 *
-	 * @return  $this
+	 * @return ORM
 	 */
 	public function or_where_open()
 	{
@@ -1932,7 +2038,7 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Closes an open "AND WHERE (...)" grouping.
 	 *
-	 * @return  $this
+	 * @return ORM
 	 */
 	public function where_close()
 	{
@@ -1942,7 +2048,7 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Closes an open "AND WHERE (...)" grouping.
 	 *
-	 * @return  $this
+	 * @return ORM
 	 */
 	public function and_where_close()
 	{
@@ -1958,7 +2064,7 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Closes an open "OR WHERE (...)" grouping.
 	 *
-	 * @return  $this
+	 * @return ORM
 	 */
 	public function or_where_close()
 	{
@@ -1972,11 +2078,11 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Applies sorting with "ORDER BY ..."
+	 * Applies sorting with "ORDER BY ...".
 	 *
-	 * @param   mixed   $column     column name or array($column, $alias) or object
-	 * @param   string  $direction  direction of sorting
-	 * @return  $this
+	 * @param  mixed  $column    Column name or array($column, $alias) or object
+	 * @param  string $direction Direction of sorting
+	 * @return ORM
 	 */
 	public function order_by($column, $direction = NULL)
 	{
@@ -1990,10 +2096,10 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Return up to "LIMIT ..." results
+	 * Return up to "LIMIT ..." results.
 	 *
-	 * @param   integer  $number  maximum results to return
-	 * @return  $this
+	 * @param  int $number Maximum results to return
+	 * @return ORM
 	 */
 	public function limit($number)
 	{
@@ -2007,10 +2113,10 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Enables or disables selecting only unique columns using "SELECT DISTINCT"
+	 * Enables or disables selecting only unique columns using "SELECT DISTINCT".
 	 *
-	 * @param   boolean  $value  enable or disable distinct columns
-	 * @return  $this
+	 * @param  bool $value Enable or disable distinct columns
+	 * @return ORM
 	 */
 	public function distinct($value)
 	{
@@ -2026,38 +2132,32 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Choose the columns to select from.
 	 *
-	 * @param   mixed  $columns  column name or array($column, $alias) or object
-	 * @param   ...
-	 * @return  $this
+	 * @param  mixed ..., Column name or array($column, $alias) or object
+	 * @return ORM
 	 */
-	public function select($columns = NULL)
+	public function select()
 	{
-		$columns = func_get_args();
-
 		// Add pending database call which is executed after query type is determined
 		$this->_db_pending[] = array(
 			'name' => 'select',
-			'args' => $columns,
+			'args' => func_get_args(),
 		);
 
 		return $this;
 	}
 
 	/**
-	 * Choose the tables to select "FROM ..."
+	 * Choose the tables to select "FROM ...".
 	 *
-	 * @param   mixed  $tables  table name or array($table, $alias) or object
-	 * @param   ...
-	 * @return  $this
+	 * @param  mixed ..., Table name or array($table, $alias) or object
+	 * @return ORM
 	 */
-	public function from($tables)
+	public function from()
 	{
-		$tables = func_get_args();
-
 		// Add pending database call which is executed after query type is determined
 		$this->_db_pending[] = array(
 			'name' => 'from',
-			'args' => $tables,
+			'args' => func_get_args(),
 		);
 
 		return $this;
@@ -2066,9 +2166,9 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Adds addition tables to "JOIN ...".
 	 *
-	 * @param   mixed   $table  column name or array($column, $alias) or object
-	 * @param   string  $type   join type (LEFT, RIGHT, INNER, etc)
-	 * @return  $this
+	 * @param  mixed  $table Column name or array($column, $alias) or object
+	 * @param  string $type  Join type (LEFT, RIGHT, INNER, etc)
+	 * @return ORM
 	 */
 	public function join($table, $type = NULL)
 	{
@@ -2084,17 +2184,17 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Adds "ON ..." conditions for the last created JOIN statement.
 	 *
-	 * @param   mixed   $c1  column name or array($column, $alias) or object
-	 * @param   string  $op  logic operator
-	 * @param   mixed   $c2  column name or array($column, $alias) or object
-	 * @return  $this
+	 * @param  mixed  $column   Column name or array($column, $alias) or object
+	 * @param  string $operator Logic operator
+	 * @param  mixed  $column2  Column name or array($column, $alias) or object
+	 * @return ORM
 	 */
-	public function on($c1, $op, $c2)
+	public function on($column, $operator, $column2)
 	{
 		// Add pending database call which is executed after query type is determined
 		$this->_db_pending[] = array(
 			'name' => 'on',
-			'args' => array($c1, $op, $c2),
+			'args' => array($column, $operator, $column2),
 		);
 
 		return $this;
@@ -2103,78 +2203,83 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Creates a "GROUP BY ..." filter.
 	 *
-	 * @param   mixed   $columns  column name or array($column, $alias) or object
-	 * @param   ...
-	 * @return  $this
+	 * @param  mixed ..., Column name or array($column, $alias) or object
+	 * @return ORM
 	 */
-	public function group_by($columns)
+	public function group_by()
 	{
-		$columns = func_get_args();
-
 		// Add pending database call which is executed after query type is determined
 		$this->_db_pending[] = array(
 			'name' => 'group_by',
-			'args' => $columns,
+			'args' => func_get_args(),
 		);
 
 		return $this;
 	}
 
 	/**
-	 * Alias of and_having()
+	 * 
 	 *
-	 * @param   mixed   $column  column name or array($column, $alias) or object
-	 * @param   string  $op      logic operator
-	 * @param   mixed   $value   column value
-	 * @return  $this
+	 * @param  string $name     
+	 * @param  mixed  $column   Column name or array($column, $alias) or object
+	 * @param  string $operator Logic operator
+	 * @param  mixed  $value    Column value
+	 * @return ORM
 	 */
-	public function having($column, $op, $value = NULL)
+	protected function _having($name, $column, $operator, $value = NULL)
 	{
-		return $this->and_having($column, $op, $value);
+		// Add pending database call which is executed after query type is determined
+		$this->_db_pending[] = array(
+			'name' => $name,
+			'args' => array($column, $operator, $value),
+		);
+
+		return $this;
+	}
+
+	/**
+	 * Creates a new "HAVING" condition for the query.
+	 *
+	 * @param  mixed  $column   Column name or array($column, $alias) or object
+	 * @param  string $operator Logic operator
+	 * @param  mixed  $value    Column value
+	 * @return ORM
+	 */
+	public function having($column, $operator, $value = NULL)
+	{
+		return $this->_having('and_having', $column, $operator, $value);
 	}
 
 	/**
 	 * Creates a new "AND HAVING" condition for the query.
 	 *
-	 * @param   mixed   $column  column name or array($column, $alias) or object
-	 * @param   string  $op      logic operator
-	 * @param   mixed   $value   column value
-	 * @return  $this
+	 * @param  mixed  $column   Column name or array($column, $alias) or object
+	 * @param  string $operator Logic operator
+	 * @param  mixed  $value    Column value
+	 * @return ORM
 	 */
-	public function and_having($column, $op, $value = NULL)
+	public function and_having($column, $operator, $value = NULL)
 	{
-		// Add pending database call which is executed after query type is determined
-		$this->_db_pending[] = array(
-			'name' => 'and_having',
-			'args' => array($column, $op, $value),
-		);
-
-		return $this;
+		return $this->having($column, $operator, $value);
 	}
 
 	/**
 	 * Creates a new "OR HAVING" condition for the query.
 	 *
-	 * @param   mixed   $column  column name or array($column, $alias) or object
-	 * @param   string  $op      logic operator
-	 * @param   mixed   $value   column value
-	 * @return  $this
+	 * @param  mixed  $column   Column name or array($column, $alias) or object
+	 * @param  string $operator Logic operator
+	 * @param  mixed  $value    Column value
+	 * @return ORM
 	 */
-	public function or_having($column, $op, $value = NULL)
+	public function or_having($column, $operator, $value = NULL)
 	{
-		// Add pending database call which is executed after query type is determined
-		$this->_db_pending[] = array(
-			'name' => 'or_having',
-			'args' => array($column, $op, $value),
-		);
-
-		return $this;
+		return $this->_having('or_having', $column, $operator, $value);
 	}
 
 	/**
-	 * Alias of and_having_open()
+	 * Alias of [ORM::and_having_open()].
 	 *
-	 * @return  $this
+	 * @return ORM
 	 */
 	public function having_open()
 	{
@@ -2184,7 +2289,7 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Opens a new "AND HAVING (...)" grouping.
 	 *
-	 * @return  $this
+	 * @return ORM
 	 */
 	public function and_having_open()
 	{
@@ -2200,7 +2305,7 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Opens a new "OR HAVING (...)" grouping.
 	 *
-	 * @return  $this
+	 * @return ORM
 	 */
 	public function or_having_open()
 	{
@@ -2216,7 +2321,7 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Closes an open "AND HAVING (...)" grouping.
 	 *
-	 * @return  $this
+	 * @return ORM
 	 */
 	public function having_close()
 	{
@@ -2226,7 +2331,7 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Closes an open "AND HAVING (...)" grouping.
 	 *
-	 * @return  $this
+	 * @return ORM
 	 */
 	public function and_having_close()
 	{
@@ -2242,7 +2347,7 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Closes an open "OR HAVING (...)" grouping.
 	 *
-	 * @return  $this
+	 * @return ORM
 	 */
 	public function or_having_close()
 	{
@@ -2258,8 +2363,8 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Start returning results after "OFFSET ..."
 	 *
-	 * @param   integer   $number  starting result number
-	 * @return  $this
+	 * @param  int $number Starting result number
+	 * @return ORM
 	 */
 	public function offset($number)
 	{
@@ -2275,11 +2380,10 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Enables the query to be cached for a specified amount of time.
 	 *
-	 * @param   integer  $lifetime  number of seconds to cache
-	 * @return  $this
-	 * @uses    Kohana::$cache_life
+	 * @param  int $lifetime Number of seconds to cache
+	 * @return ORM
 	 */
-	public function cached($lifetime = NULL)
+	public function cached($lifetime = 0)
 	{
 		// Add pending database call which is executed after query type is determined
 		$this->_db_pending[] = array(
@@ -2293,9 +2397,9 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Set the value of a parameter in the query.
 	 *
-	 * @param   string   $param  parameter key to replace
-	 * @param   mixed    $value  value to use
-	 * @return  $this
+	 * @param  string $param Parameter key to replace
+	 * @param  mixed  $value Value to use
+	 * @return ORM
 	 */
 	public function param($param, $value)
 	{
@@ -2311,8 +2415,8 @@ class Kohana_ORM extends Model implements serializable {
 	/**
 	 * Adds "USING ..." conditions for the last created JOIN statement.
 	 *
-	 * @param   string  $columns  column name
-	 * @return  $this
+	 * @param  string $columns Column name
+	 * @return ORM
 	 */
 	public function using($columns)
 	{
@@ -2326,12 +2430,11 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
-	 * Checks whether a column value is unique.
-	 * Excludes itself if loaded.
-	 *
-	 * @param   string   $field  the field to check for uniqueness
-	 * @param   mixed    $value  the value to check for uniqueness
-	 * @return  bool     whether the value is unique
+	 * Checks whether a column value is unique. Excludes itself if loaded.
+	 * 
+	 * @param  string $field The field to check for uniqueness
+	 * @param  mixed  $value The value to check for uniqueness
+	 * @return bool Whether the value is unique
 	 */
 	public function unique($field, $value)
 	{
@@ -2341,9 +2444,10 @@ class Kohana_ORM extends Model implements serializable {
 
 		if ($this->loaded())
 		{
-			return ( ! ($model->loaded() AND $model->pk() != $this->pk()));
+			return ( ! ($model->loaded() AND $model->pk() !== $this->pk()));
 		}
 
 		return ( ! $model->loaded());
 	}
-} // End ORM
+
+}

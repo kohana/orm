@@ -1,13 +1,13 @@
 <?php defined('SYSPATH') OR die('No direct access allowed.');
 /**
- * Default auth user
+ * Default auth user.
  *
  * @package    Kohana/Auth
  * @author     Kohana Team
- * @copyright  (c) 2007-2012 Kohana Team
+ * @copyright  (c) 2007-2014 Kohana Team
  * @license    http://kohanaframework.org/license
  */
-class Model_Auth_User extends ORM {
+abstract class Model_Auth_User extends ORM {
 
 	/**
 	 * A user has many tokens and roles
@@ -21,7 +21,7 @@ class Model_Auth_User extends ORM {
 
 	/**
 	 * Rules for the user model. Because the password is _always_ a hash
-	 * when it's set,you need to run an additional not_empty rule in your controller
+	 * when it's set, you need to run an additional not_empty rule in your controller
 	 * to make sure you didn't hash an empty string. The password rules
 	 * should be enforced outside the model or with a model helper method.
 	 *
@@ -62,21 +62,22 @@ class Model_Auth_User extends ORM {
 	}
 
 	/**
-	 * Labels for fields in this model
+	 * Labels for fields in this model.
 	 *
 	 * @return array Labels
 	 */
 	public function labels()
 	{
 		return array(
-			'username'         => 'username',
-			'email'            => 'email address',
-			'password'         => 'password',
+			'username' => 'username',
+			'email'    => 'email address',
+			'password' => 'password',
 		);
 	}
 
 	/**
-	 * Complete the login for a user by incrementing the logins and saving login timestamp
+	 * Complete the login for a user by incrementing the logins 
+	 * and saving login timestamp.
 	 *
 	 * @return void
 	 */
@@ -85,7 +86,7 @@ class Model_Auth_User extends ORM {
 		if ($this->_loaded)
 		{
 			// Update the number of logins
-			$this->logins = new Database_Expression('logins + 1');
+			$this->logins = DB::expr('logins + 1');
 
 			// Set the last login date
 			$this->last_login = time();
@@ -98,9 +99,9 @@ class Model_Auth_User extends ORM {
 	/**
 	 * Tests if a unique key value exists in the database.
 	 *
-	 * @param   mixed    the value to test
-	 * @param   string   field name
-	 * @return  boolean
+	 * @param  mixed  $value The value to test
+	 * @param  string $field Field name
+	 * @return bool
 	 */
 	public function unique_key_exists($value, $field = NULL)
 	{
@@ -110,7 +111,8 @@ class Model_Auth_User extends ORM {
 			$field = $this->unique_key($value);
 		}
 
-		return (bool) DB::select(array(DB::expr('COUNT(*)'), 'total_count'))
+		// "COUNT(id)" work faster then "COUNT(*)"
+		return (bool) DB::select(array(DB::expr('COUNT('.$this->_primary_key.')'), 'total_count'))
 			->from($this->_table_name)
 			->where($field, '=', $value)
 			->where($this->_primary_key, '!=', $this->pk())
@@ -119,10 +121,10 @@ class Model_Auth_User extends ORM {
 	}
 
 	/**
-	 * Allows a model use both email and username as unique identifiers for login
+	 * Allows a model use both email and username as unique identifiers for login.
 	 *
-	 * @param   string  unique value
-	 * @return  string  field name
+	 * @param  string $value Unique value
+	 * @return string Field name
 	 */
 	public function unique_key($value)
 	{
@@ -143,52 +145,51 @@ class Model_Auth_User extends ORM {
 	}
 
 	/**
-	 * Create a new user
-	 *
-	 * Example usage:
+	 * Create a new user.
+	 * 
 	 * ~~~
-	 * $user = ORM::factory('User')->create_user($_POST, array(
-	 *	'username',
-	 *	'password',
-	 *	'email',
-	 * );
+	 * $new_user = ORM::factory('User')
+	 *     ->create_user(
+	 *         $this->request->post(), 
+	 *         array('username', 'password', 'email')
+	 *     );
 	 * ~~~
 	 *
 	 * @param array $values
 	 * @param array $expected
 	 * @throws ORM_Validation_Exception
 	 */
-	public function create_user($values, $expected)
+	public function create_user($values, $expected = array('username', 'password', 'email'))
 	{
 		// Validation for passwords
 		$extra_validation = Model_User::get_password_validation($values)
 			->rule('password', 'not_empty');
 
-		return $this->values($values, $expected)->create($extra_validation);
+		return $this->values($values, $expected)
+			->create($extra_validation);
 	}
 
 	/**
-	 * Update an existing user
+	 * Update an existing user.
 	 *
-	 * [!!] We make the assumption that if a user does not supply a password, that they do not wish to update their password.
+	 * [!!] We make the assumption that if a user does not supply a password,
+	 * that they do not wish to update their password.
 	 *
-	 * Example usage:
 	 * ~~~
 	 * $user = ORM::factory('User')
-	 *	->where('username', '=', 'kiall')
-	 *	->find()
-	 *	->update_user($_POST, array(
-	 *		'username',
-	 *		'password',
-	 *		'email',
-	 *	);
+	 *     ->where('username', '=', 'kiall')
+	 *     ->find()
+	 *     ->update_user(
+	 *         $this->request->post(), 
+	 *         array('username', 'password', 'email')
+	 *     );
 	 * ~~~
 	 *
 	 * @param array $values
 	 * @param array $expected
 	 * @throws ORM_Validation_Exception
 	 */
-	public function update_user($values, $expected = NULL)
+	public function update_user($values, $expected = array('username', 'password', 'email'))
 	{
 		if (empty($values['password']))
 		{
@@ -198,7 +199,8 @@ class Model_Auth_User extends ORM {
 		// Validation for passwords
 		$extra_validation = Model_User::get_password_validation($values);
 
-		return $this->values($values, $expected)->update($extra_validation);
+		return $this->values($values, $expected)
+			->update($extra_validation);
 	}
 
-} // End Auth User Model
+}
