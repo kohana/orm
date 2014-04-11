@@ -17,6 +17,8 @@ class Kohana_Auth_ORM extends Auth {
 	 */
 	public function logged_in($role = NULL)
 	{
+		static $roles;
+
 		// Get the user from the session
 		$user = $this->get_user();
 
@@ -29,31 +31,27 @@ class Kohana_Auth_ORM extends Auth {
 			if ( ! $role)
 				return TRUE;
 
-			if (is_array($role))
-			{
-				// Get all the roles
-				$roles = ORM::factory('role')
-							->where('name', 'IN', $role)
-							->find_all()
-							->as_array(NULL, 'id');
+			if ( ! is_array($role))
+				$role = array($role);
+			
+			if ( ! isset($roles))
+				$roles = $user->roles->find_all()->as_array('id', 'name');
 
-				// Make sure all the roles are valid ones
-				if (count($roles) !== count($role))
-					return FALSE;
-			}
-			else
+			foreach ($role as $role_item)
 			{
-				if ( ! is_object($role))
-				{
-					// Load the role
-					$roles = ORM::factory('role', array('name' => $role));
-
-					if ( ! $roles->loaded())
+				if (is_int($role_item)) {
+					if (!isset($roles[$role_item]))
+						return FALSE;
+				} elseif (is_object($role_item)) {
+					if (!isset($roles[$role_item->pk()]))
+						return FALSE;
+				} else {
+					if (!in_array($role_item, $roles))
 						return FALSE;
 				}
 			}
-
-			return $user->has('roles', $roles);
+			
+			return TRUE;
 		}
 	}
 
