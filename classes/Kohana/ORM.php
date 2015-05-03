@@ -1442,7 +1442,7 @@ class Kohana_ORM extends Model implements serializable {
 	 * 
 	 *
 	 *     // Check if $model has the login role
-	 *     $model->has('roles', ORM::factory('role', array('name' => 'login')));
+	 *     $model->has('roles', ORM::factory('Role', array('name' => 'login')));
 	 *     // Check for the login role if you know the roles.id is 5
 	 *     $model->has('roles', 5);
 	 *     // Check for all of the following roles
@@ -1474,7 +1474,7 @@ class Kohana_ORM extends Model implements serializable {
 	 * only checks that at least one of the relationships is satisfied.
 	 *
 	 *     // Check if $model has the login role
-	 *     $model->has('roles', ORM::factory('role', array('name' => 'login')));
+	 *     $model->has('roles', ORM::factory('Role', array('name' => 'login')));
 	 *     // Check for the login role if you know the roles.id is 5
 	 *     $model->has('roles', 5);
 	 *     // Check for any of the following roles
@@ -1495,7 +1495,7 @@ class Kohana_ORM extends Model implements serializable {
 	 * Returns the number of relationships 
 	 *
 	 *     // Counts the number of times the login role is attached to $model
-	 *     $model->count_relations('roles', ORM::factory('role', array('name' => 'login')));
+	 *     $model->count_relations('roles', ORM::factory('Role', array('name' => 'login')));
 	 *     // Counts the number of times role 5 is attached to $model
 	 *     $model->count_relations('roles', 5);
 	 *     // Counts the number of times any of roles 1, 2, 3, or 4 are attached to
@@ -1542,7 +1542,7 @@ class Kohana_ORM extends Model implements serializable {
 	 * Adds a new relationship to between this model and another.
 	 *
 	 *     // Add the login role using a model instance
-	 *     $model->add('roles', ORM::factory('role', array('name' => 'login')));
+	 *     $model->add('roles', ORM::factory('Role', array('name' => 'login')));
 	 *     // Add the login role if you know the roles.id is 5
 	 *     $model->add('roles', 5);
 	 *     // Add multiple roles (for example, from checkboxes on a form)
@@ -1575,7 +1575,7 @@ class Kohana_ORM extends Model implements serializable {
 	 * Removes a relationship between this model and another.
 	 *
 	 *     // Remove a role using a model instance
-	 *     $model->remove('roles', ORM::factory('role', array('name' => 'login')));
+	 *     $model->remove('roles', ORM::factory('Role', array('name' => 'login')));
 	 *     // Remove the role knowing the primary key
 	 *     $model->remove('roles', 5);
 	 *     // Remove multiple roles (for example, from checkboxes on a form)
