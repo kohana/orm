@@ -2000,7 +2000,7 @@ class Kohana_ORM extends Model implements serializable {
 		// Add pending database call which is executed after query type is determined
 		$this->_db_pending[] = array(
 			'name' => 'limit',
-			'args' => array($number),
+			'args' => array(intval($number)),
 		);
 
 		return $this;
@@ -2266,7 +2266,7 @@ class Kohana_ORM extends Model implements serializable {
 		// Add pending database call which is executed after query type is determined
 		$this->_db_pending[] = array(
 			'name' => 'offset',
-			'args' => array($number),
+			'args' => array(intval($number)),
 		);
 
 		return $this;
