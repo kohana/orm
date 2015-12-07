@@ -1149,7 +1149,23 @@ class Kohana_ORM extends Model implements serializable {
 	 */
 	public function rules()
 	{
-		return array();
+		$rules = array();
+
+		foreach ($this->_table_columns as $column => $params)
+		{
+			if (is_array($params) && Arr::get($params, 'type') == 'string')
+			{
+				$max_length = Arr::get($params, 'character_maximum_length');
+				if ( ! is_null($max_length))
+				{
+					$rules[$column][] = array(
+						'max_length', array(':value', $max_length)
+					);
+				}
+			}
+		}
+
+		return $rules;
 	}
 
 	/**
