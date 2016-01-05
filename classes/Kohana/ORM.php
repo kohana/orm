@@ -245,6 +245,12 @@ class Kohana_ORM extends Model implements serializable {
 	protected $_errors_filename = NULL;
 
 	/**
+	 * List of private columns that will not appear in array or object
+	 * @var array
+	 */
+	protected $_private_columns = FALSE;
+
+	/**
 	 * Constructs a new model and loads a record if given
 	 *
 	 * @param   mixed $id Parameter for find or object to load
@@ -809,19 +815,64 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
+	 * Returns the type of the column
+	 *
+	 * @return string
+	 */
+	protected function table_column_type($column)
+	{
+		if ( ! array_key_exists($column, $this->_table_columns))
+			return FALSE;
+		
+		return $this->_table_columns[$column]['type'];
+	}
+
+	/**
+	 * Returns a value as the native type, will return FALSE if the
+	 * value could not be casted.
+	 *
+	 * @return float, int, string or FALSE
+	 */
+	protected function get_typed($column)
+	{
+		$value = $this->get($column);
+		
+		switch($this->table_column_type($column))
+		{
+			case 'float':  return floatval($this->__get($column));
+			case 'int':    return intval($this->__get($column));
+			case 'string': return strval($this->__get($column));
+		}
+		
+		return FALSE;
+	}
+
+	/**
 	 * Returns the values of this object as an array, including any related one-one
 	 * models that have already been loaded using with()
 	 *
 	 * @return array
 	 */
-	public function as_array()
+	public function as_array($show_all=FALSE)
 	{
 		$object = array();
 
-		foreach ($this->_object as $column => $value)
+		if ($show_all OR !is_array($this->_private_columns))
 		{
-			// Call __get for any user processing
-			$object[$column] = $this->__get($column);
+			foreach ($this->_object as $column => $value)
+			{
+				// Call __get for any user processing
+				$object[$column] = $this->__get($column);
+			}
+		}
+		else
+		{
+			foreach ($this->_object as $column => $value)
+			{
+				// Call __get for any user processing
+				if (!in_array($column, $this->_private_columns))
+					$object[$column] = $this->__get($column);
+			}
 		}
 
 		foreach ($this->_related as $column => $model)
@@ -830,6 +881,42 @@ class Kohana_ORM extends Model implements serializable {
 			$object[$column] = $model->as_array();
 		}
 
+		return $object;
+	}
+
+	/**
+	 * Returns the values of this object as an new object, including any related 
+	 * one-one models that have already been loaded using with(). Removes private
+	 * columns.
+	 *
+	 * @return array
+	 */
+	public function as_object($show_all=FALSE)
+	{
+		$object = new stdClass;
+
+		if ($show_all OR !is_array($this->_private_columns))
+		{
+			foreach ($this->_object as $column => $value)
+			{
+				$object->{$column} = $this->get_typed($column);
+			}
+		}
+		else
+		{
+			foreach ($this->_object as $column => $value)
+			{
+				if (!in_array($column, $this->_private_columns))
+					$object->{$column} = $this->get_typed($column);
+			}
+		}
+
+		foreach ($this->_related as $column => $model)
+		{
+			// Include any related objects that are already loaded
+			$object->{$column} = $model->as_object();
+		}
+    
 		return $object;
 	}
 
