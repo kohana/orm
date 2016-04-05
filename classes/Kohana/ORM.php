@@ -251,6 +251,12 @@ class Kohana_ORM extends Model implements serializable {
 	protected $_private_columns = FALSE;
 
 	/**
+	 * List of behaviors
+	 * @var array
+	 */
+	protected $_behaviors = array();
+
+	/**
 	 * Constructs a new model and loads a record if given
 	 *
 	 * @param   mixed $id Parameter for find or object to load
@@ -258,6 +264,13 @@ class Kohana_ORM extends Model implements serializable {
 	public function __construct($id = NULL)
 	{
 		$this->_initialize();
+
+		// Invoke all behaviors
+		foreach ($this->_behaviors as $behavior)
+		{
+			if ( ! $behavior->on_construct($this, $id) || $this->_loaded)
+				return;
+		}
 
 		if ($id !== NULL)
 		{
@@ -396,6 +409,12 @@ class Kohana_ORM extends Model implements serializable {
 
 		// Clear initial model state
 		$this->clear();
+
+		// Create the behaviors classes
+		foreach ($this->behaviors() as $behavior => $behavior_config)
+		{
+			$this->_behaviors[] = ORM_Behavior::factory($behavior, $behavior_config);
+		}
 	}
 
 	/**
@@ -1383,6 +1402,12 @@ class Kohana_ORM extends Model implements serializable {
 		if ($this->_loaded)
 			throw new Kohana_Exception('Cannot create :model model because it is already loaded.', array(':model' => $this->_object_name));
 
+		// Invoke all behaviors
+		foreach ($this->_behaviors as $behavior)
+		{
+			$behavior->on_create($this);
+		}
+
 		// Require model validation before saving
 		if ( ! $this->_valid OR $validation)
 		{
@@ -1442,6 +1467,12 @@ class Kohana_ORM extends Model implements serializable {
 	{
 		if ( ! $this->_loaded)
 			throw new Kohana_Exception('Cannot update :model model because it is not loaded.', array(':model' => $this->_object_name));
+
+		// Invoke all behaviors
+		foreach ($this->_behaviors as $behavior)
+		{
+			$behavior->on_update($this);
+		}
 
 		// Run validation if the model isn't valid or we have additional validation rules.
 		if ( ! $this->_valid OR $validation)
