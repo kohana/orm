@@ -1360,6 +1360,16 @@ class Kohana_ORM extends Model implements serializable {
 	}
 
 	/**
+	 * Behavior definition for the model
+	 *
+	 * @return array
+	 */
+	public function behaviors()
+	{
+		return array();
+	}
+
+	/**
 	 * Validates the current model's data
 	 *
 	 * @param  Validation $extra_validation Validation object
