@@ -27,7 +27,7 @@ Filters run as soon as the field is set in your model and should be used to form
 				// Callback method with object context with implicit param of ':value'
 				array(array($this, 'change_other_field')),
 				// PHP function callback with explicit params
-				array('str_replace', array('luango', 'thomas', ':value'),
+				array('str_replace', array('luango', 'thomas', ':value')),
 				// Function as the callback (PHP 5.3+)
 				array(function($value) {
 					// Do something to $value and return it.
