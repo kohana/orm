@@ -1472,7 +1472,7 @@ class Kohana_ORM extends Model implements serializable {
 		}
 		else
 		{
-			return $count === count($far_keys);
+			return $count >= count($far_keys);
 		}
 
 	}
