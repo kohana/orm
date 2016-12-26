@@ -14,6 +14,12 @@ class Model_Auth_Role extends ORM {
 		'users' => array('model' => 'User','through' => 'roles_users'),
 	);
 
+	protected $_table_columns = array(
+		'id'          => NULL,
+		'name'        => NULL,
+		'description' => NULL,
+	);
+
 	public function rules()
 	{
 		return array(

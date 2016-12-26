@@ -19,6 +19,16 @@ class Model_Auth_User_Token extends ORM {
 		'format' => TRUE,
 	);
 
+	protected $_table_columns = array(
+		'id'         => NULL,
+		'user_id'    => NULL,
+		'user_agent' => NULL,
+		'token'      => NULL,
+		'type'       => NULL,
+		'created'    => NULL,
+		'expires'    => NULL,
+	);
+
 	/**
 	 * Handles garbage collection and deleting of expired objects.
 	 *

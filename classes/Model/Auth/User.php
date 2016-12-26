@@ -19,6 +19,15 @@ class Model_Auth_User extends ORM {
 		'roles'       => array('model' => 'Role', 'through' => 'roles_users'),
 	);
 
+	protected $_table_columns = array(
+		'id'         => NULL,
+		'email'      => NULL,
+		'username'   => NULL,
+		'password'   => NULL,
+		'logins'     => NULL,
+		'last_login' => NULL,
+	);
+
 	/**
 	 * Rules for the user model. Because the password is _always_ a hash
 	 * when it's set,you need to run an additional not_empty rule in your controller
