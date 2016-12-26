@@ -151,13 +151,13 @@ class Kohana_ORM extends Model implements serializable {
 	 * Auto-update columns for updates
 	 * @var string
 	 */
-	protected $_updated_column = NULL;
+	protected $_updated_column = array('column'=>'updated_at', 'format'=>'Y-m-d H:i:s');
 
 	/**
 	 * Auto-update columns for creation
 	 * @var string
 	 */
-	protected $_created_column = NULL;
+	protected $_created_column = array('column'=>'created_at', 'format'=>'Y-m-d H:i:s');
 
 	/**
 	 * Auto-serialize and unserialize columns on get/set
