@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS `roles_users` (
 
 CREATE TABLE IF NOT EXISTS `users` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `email` varchar(254) NOT NULL,
+  `email` varchar(127) NOT NULL,
   `username` varchar(32) NOT NULL DEFAULT '',
   `password` varchar(64) NOT NULL,
   `logins` int(10) UNSIGNED NOT NULL DEFAULT '0',
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   UNIQUE KEY `uniq_email` (`email`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `user_tokens` (
+CREATE TABLE IF NOT EXISTS `users_tokens` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id` int(11) UNSIGNED NOT NULL,
   `user_agent` varchar(40) NOT NULL,
@@ -45,5 +45,5 @@ ALTER TABLE `roles_users`
   ADD CONSTRAINT `roles_users_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `roles_users_ibfk_2` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE;
 
-ALTER TABLE `user_tokens`
+ALTER TABLE `users_tokens`
   ADD CONSTRAINT `user_tokens_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
