@@ -1,19 +1,25 @@
 <?php defined('SYSPATH') OR die('No direct access allowed.');
 /**
- * Default auth user toke
+ * Default auth user token.
  *
  * @package    Kohana/Auth
  * @author     Kohana Team
- * @copyright  (c) 2007-2012 Kohana Team
+ * @copyright  (c) 2007-2014 Kohana Team
  * @license    http://kohanaframework.org/license
  */
-class Model_Auth_User_Token extends ORM {
+abstract class Model_Auth_User_Token extends ORM {
 
-	// Relationships
+	/**
+	 * @var array "Belongs to" relationships
+	 */
 	protected $_belongs_to = array(
 		'user' => array('model' => 'User'),
 	);
-	
+
+	/**
+	 * @var array Auto-updated column at create
+	 * @see ORM::$_created_column
+	 */
 	protected $_created_column = array(
 		'column' => 'created',
 		'format' => TRUE,
@@ -22,13 +28,14 @@ class Model_Auth_User_Token extends ORM {
 	/**
 	 * Handles garbage collection and deleting of expired objects.
 	 *
-	 * @return  void
+	 * @param  mixed $id
+	 * @return void
 	 */
 	public function __construct($id = NULL)
 	{
 		parent::__construct($id);
 
-		if (mt_rand(1, 100) === 1)
+		if (mt_rand(1, 50) == 1)
 		{
 			// Do garbage collection
 			$this->delete_expired();
@@ -44,11 +51,10 @@ class Model_Auth_User_Token extends ORM {
 	/**
 	 * Deletes all expired tokens.
 	 *
-	 * @return  ORM
+	 * @return ORM
 	 */
 	public function delete_expired()
 	{
-		// Delete all expired tokens
 		DB::delete($this->_table_name)
 			->where('expires', '<', time())
 			->execute($this->_db);
@@ -56,14 +62,25 @@ class Model_Auth_User_Token extends ORM {
 		return $this;
 	}
 
+	/**
+	 * Create new token object.
+	 *
+	 * @param  Validation $validation
+	 * @return ORM
+	 */
 	public function create(Validation $validation = NULL)
 	{
-		$this->token = $this->create_token();
+		$this->token = $this->_create_token();
 
 		return parent::create($validation);
 	}
 
-	protected function create_token()
+	/**
+	 * Create new token string.
+	 *
+	 * @return string
+	 */
+	protected function _create_token()
 	{
 		do
 		{
@@ -74,4 +91,4 @@ class Model_Auth_User_Token extends ORM {
 		return $token;
 	}
 
-} // End Auth User Token Model
+}
